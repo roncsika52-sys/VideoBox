@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#e53935">
-<title>VideoBox – Videómegosztó</title>
+<title>VideaMax – Videómegosztó</title>
 <style>
 :root{--red:#e53935;--dark:#20232a;--muted:#737b86;--bg:#f4f5f7;--white:#fff;--line:#e5e7eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--dark);font:15px Arial,Helvetica,sans-serif}
@@ -29,7 +29,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 <body>
 <header>
  <div class="top">
-  <div class="logo">Video<span>Box</span></div>
+  <div class="logo">Videa<span>Max</span></div>
   <form class="search" id="searchForm"><input id="searchInput" placeholder="Videó keresése..." aria-label="Videó keresése"><button type="submit">Keresés</button></form>
   <div class="actions"><button class="btn" id="adminButton" type="button" style="display:none">Admin</button><button class="btn" id="authButton" type="button">Belépés</button><button class="btn red" id="uploadButton" type="button">＋ Feltöltés</button></div>
  </div>
@@ -41,13 +41,13 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  <div class="intro"><div><h1 id="sectionTitle">Legújabb videók</h1><div class="hint" id="subtitle">Nézz videókat, vagy töltsd fel a sajátodat!</div></div></div>
  <section class="grid" id="videoGrid"><div class="empty">Videók betöltése…</div></section>
 </main>
-<footer>© 2026 VideoBox · Csak saját vagy megosztásra engedélyezett videót tölts fel. A feltöltések ellenőrzés után jelennek meg.</footer>
+<footer>© 2026 VideaMax · Csak saját vagy megosztásra engedélyezett videót tölts fel. A feltöltések ellenőrzés után jelennek meg.</footer>
 
 <div class="modal" id="authModal"><div class="dialog"><button class="close" type="button" data-close aria-label="Bezárás">×</button><h2 id="authTitle">Belépés</h2>
  <div class="field"><label for="authEmail">E-mail cím</label><input id="authEmail" type="email" autocomplete="email" placeholder="nev@email.hu"></div>
  <div class="field"><label for="authPassword">Jelszó</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Jelszó (legalább 8 karakter)"></div>
  <div class="row"><button class="btn" id="switchAuth" type="button">Regisztráció</button><button class="btn red" id="submitAuth" type="button">Belépés</button></div><div class="status" id="authStatus" aria-live="polite"></div>
- <p class="note">Regisztráció után nyisd meg a VideoBox által küldött megerősítő e-mailt. A levél a videobox-9fs.pages.dev oldalra irányít vissza.</p>
+ <p class="note">Regisztráció után nyisd meg a VideaMax által küldött megerősítő e-mailt. A levél a videobox-9fs.pages.dev oldalra irányít vissza.</p>
 </div></div>
 
 <div class="modal" id="uploadModal"><div class="dialog"><button class="close" type="button" data-close aria-label="Bezárás">×</button><h2>Videó feltöltése</h2>
@@ -197,7 +197,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
        const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:SITE_URL}});
        if(error)throw error;
        if(data.session){await refreshUser();status('authStatus','Sikeres regisztráció és belépés!','ok');}
-       else status('authStatus','A regisztráció elkészült. Nyisd meg a VideoBoxtól kapott megerősítő e-mailt. A link a VideoBox weboldalára irányít vissza.','ok');
+       else status('authStatus','A regisztráció elkészült. Nyisd meg a VideaMaxtól kapott megerősítő e-mailt. A link a VideaMax weboldalára irányít vissza.','ok');
      } else {
        const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;
        await refreshUser();hideModals();
@@ -235,7 +235,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
      currentUser=session?.user??null;
      $('authButton').textContent=currentUser?'Kilépés':'Belépés';
      if(event==='SIGNED_IN' && window.location.hash.includes('type=signup')){
-       status('authStatus','E-mail-cím megerősítve! Sikeresen beléptél a VideoBoxba.','ok');
+       status('authStatus','E-mail-cím megerősítve! Sikeresen beléptél a VideaMaxba.','ok');
      }
      refreshUser();
    } else if(event==='SIGNED_OUT'){
