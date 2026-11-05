@@ -30,7 +30,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  <div class="top">
   <div class="logo">Video<span>Box</span></div>
   <form class="search" id="searchForm"><input id="searchInput" placeholder="Videó keresése..." aria-label="Videó keresése"><button>Keresés</button></form>
-  <div class="actions"><button class="btn" id="authButton">Belépés</button><button class="btn red" id="uploadButton">＋ Feltöltés</button></div>
+  <div class="actions"><button class="btn" id="adminButton" style="display:none">Admin</button><button class="btn" id="authButton">Belépés</button><button class="btn red" id="uploadButton">＋ Feltöltés</button></div>
  </div>
  <nav id="categories">
   <button class="active" data-cat="Összes">Összes</button><button data-cat="Film">Film</button><button data-cat="Zene">Zene</button><button data-cat="Sport">Sport</button><button data-cat="Szórakozás">Szórakozás</button><button data-cat="Oktatás">Oktatás</button><button data-cat="Egyéb">Egyéb</button>
@@ -59,6 +59,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 </div></div>
 
 <div class="modal" id="viewerModal"><div class="dialog viewer"><button class="close" data-close>×</button><video id="viewerVideo" controls playsinline></video><h2 id="viewerTitle"></h2><div class="meta" id="viewerMeta"></div><p id="viewerDescription"></p></div></div>
+<div class="modal" id="adminModal"><div class="dialog"><button class="close" data-close>×</button><h2>Admin – ellenőrzésre váró videók</h2><div id="adminList" class="note">Betöltés…</div><div class="status" id="adminStatus"></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -69,7 +70,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
  const $ = id => document.getElementById(id);
  const grid = $('videoGrid');
- let currentUser = null, authMode = 'login', activeCategory = 'Összes', videos = [], viewerUrl = null;
+ let currentUser = null, isAdmin = false, authMode = 'login', activeCategory = 'Összes', videos = [];
 
  const showModal = id => $(id).classList.add('show');
  const hideModals = () => document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
@@ -83,6 +84,12 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    const {data:{session}} = await client.auth.getSession();
    currentUser = session?.user ?? null;
    $('authButton').textContent = currentUser ? 'Kilépés' : 'Belépés';
+   isAdmin = false;
+   if (currentUser) {
+     const {data, error} = await client.rpc('videobox_is_admin');
+     if (!error) isAdmin = data === true;
+   }
+   $('adminButton').style.display = isAdmin ? '' : 'none';
  }
  async function loadVideos() {
    grid.replaceChildren(safeText('div','Videók betöltése…','empty'));
@@ -111,6 +118,29 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    showModal('viewerModal');
    client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
  }
+ 
+ async function loadAdminQueue() {
+   const box=$('adminList'); box.textContent='Betöltés…';
+   const {data,error}=await client.from('videos').select('id,title,description,category,created_at').eq('status','pending').order('created_at',{ascending:true}).limit(100);
+   if(error){box.textContent='Hiba: '+error.message;return;}
+   box.replaceChildren();
+   if(!data.length){box.textContent='Nincs ellenőrzésre váró videó.';return;}
+   data.forEach(v=>{
+     const item=document.createElement('div');item.style.cssText='border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:10px 0';
+     item.append(safeText('strong',v.title),safeText('p',v.description||'Nincs leírás.'));
+     const ok=safeText('button','Jóváhagyás','btn red'),no=safeText('button','Elutasítás','btn');
+     ok.addEventListener('click',()=>moderateVideo(v,'published'));no.addEventListener('click',()=>moderateVideo(v,'rejected'));
+     item.append(ok,no);box.append(item);
+   });
+ }
+ async function moderateVideo(v,s) {
+   const {error}=await client.from('videos').update({status:s}).eq('id',v.id);
+   if(error){status('adminStatus',error.message,'error');return;}
+   status('adminStatus',s==='published'?'A videó megjelent.':'A videó elutasítva.','ok');
+   await loadAdminQueue();await loadVideos();
+ }
+ $('adminButton').addEventListener('click',async()=>{if(!isAdmin)return;status('adminStatus','');showModal('adminModal');await loadAdminQueue();});
+
  $('viewerVideo').addEventListener('error',()=>{ $('viewerMeta').textContent='A videó jelenleg nem játszható le.'; });
 
  $('searchForm').addEventListener('submit',e=>{e.preventDefault();renderVideos();});
