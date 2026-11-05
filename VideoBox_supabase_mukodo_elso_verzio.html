@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e53935">
+<title>VideoBox – Videómegosztó</title>
+<style>
+:root{--red:#e53935;--dark:#20232a;--muted:#737b86;--bg:#f4f5f7;--white:#fff;--line:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--dark);font:15px Arial,Helvetica,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.top{max-width:1240px;margin:auto;display:flex;align-items:center;gap:18px;padding:13px 18px}
+.logo{font-size:27px;font-weight:800;letter-spacing:-1px;color:var(--red);white-space:nowrap}.logo span{color:var(--dark)}
+.search{display:flex;flex:1;max-width:650px}.search input{min-width:0;width:100%;padding:12px 14px;border:1px solid #d7dbe1;border-radius:8px 0 0 8px;outline:none}.search button,.primary{border:0;background:var(--red);color:#fff;font-weight:700;padding:0 18px;border-radius:0 8px 8px 0}
+.actions{margin-left:auto;display:flex;gap:8px;align-items:center}.btn{border:1px solid #d7dbe1;background:#fff;border-radius:8px;padding:10px 13px;font-weight:700}.btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn:disabled{opacity:.55;cursor:not-allowed}
+nav{max-width:1240px;margin:auto;padding:0 18px 12px;display:flex;gap:8px;overflow:auto}nav button{border:0;border-radius:22px;background:#f0f1f3;padding:9px 15px;white-space:nowrap}nav button.active{background:#252932;color:#fff}
+main{max-width:1240px;margin:24px auto;padding:0 18px}.intro{display:flex;justify-content:space-between;align-items:end;margin-bottom:17px}.intro h1{font-size:24px;margin:0}.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:19px}.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 5px #17203312;min-width:0}.poster{height:158px;background:linear-gradient(135deg,#394354,#151923);display:grid;place-items:center;position:relative;color:#fff}.poster video{width:100%;height:100%;object-fit:cover}.poster .play{width:52px;height:52px;border-radius:50%;background:#ffffffdf;color:var(--red);display:grid;place-items:center;font-size:23px;padding-left:3px}.poster .tag{position:absolute;right:9px;bottom:9px;background:#000b;color:#fff;border-radius:4px;padding:4px 7px;font-size:11px}.details{padding:12px}.details h3{font-size:15px;line-height:1.35;margin:0 0 7px;overflow-wrap:anywhere}.meta{font-size:12px;color:var(--muted)}.empty{grid-column:1/-1;text-align:center;background:#fff;padding:42px 18px;border-radius:10px;color:var(--muted)}
+footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:30;align-items:center;justify-content:center;padding:15px}.modal.show{display:flex}.dialog{background:#fff;border-radius:13px;padding:22px;width:min(500px,100%);max-height:92vh;overflow:auto}.dialog h2{margin:0 0 17px}.close{float:right;border:0;background:none;font-size:23px}.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field input,.field textarea,.field select{width:100%;padding:11px;border:1px solid #d7dbe1;border-radius:7px}.field textarea{min-height:85px;resize:vertical}.row{display:flex;gap:9px;justify-content:flex-end;margin-top:17px}.note{font-size:12px;line-height:1.5;color:var(--muted)}.status{font-size:13px;margin-top:12px;line-height:1.4}.status.error{color:#bd2525}.status.ok{color:#18764b}
+.viewer{width:min(900px,100%)}.viewer video{width:100%;max-height:70vh;background:#000;border-radius:8px}.viewer h2{margin:13px 0 5px}
+@media(max-width:950px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:680px){.top{flex-wrap:wrap;gap:9px}.logo{font-size:24px}.search{order:3;flex-basis:100%;max-width:none}.actions{margin-left:auto}.btn{padding:9px 10px;font-size:12px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.poster{height:125px}.intro h1{font-size:20px}}
+@media(max-width:390px){.grid{grid-template-columns:1fr}.poster{height:180px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="top">
+  <div class="logo">Video<span>Box</span></div>
+  <form class="search" id="searchForm"><input id="searchInput" placeholder="Videó keresése..." aria-label="Videó keresése"><button>Keresés</button></form>
+  <div class="actions"><button class="btn" id="authButton">Belépés</button><button class="btn red" id="uploadButton">＋ Feltöltés</button></div>
+ </div>
+ <nav id="categories">
+  <button class="active" data-cat="Összes">Összes</button><button data-cat="Film">Film</button><button data-cat="Zene">Zene</button><button data-cat="Sport">Sport</button><button data-cat="Szórakozás">Szórakozás</button><button data-cat="Oktatás">Oktatás</button><button data-cat="Egyéb">Egyéb</button>
+ </nav>
+</header>
+<main>
+ <div class="intro"><div><h1 id="sectionTitle">Legújabb videók</h1><div class="hint" id="subtitle">Nézz videókat, vagy töltsd fel a sajátodat!</div></div></div>
+ <section class="grid" id="videoGrid"><div class="empty">Videók betöltése…</div></section>
+</main>
+<footer>© 2026 VideoBox · Csak saját vagy megosztásra engedélyezett videót tölts fel. A feltöltések ellenőrzés után jelennek meg.</footer>
+
+<div class="modal" id="authModal"><div class="dialog"><button class="close" data-close>×</button><h2 id="authTitle">Belépés</h2>
+ <div class="field"><label for="authEmail">E-mail cím</label><input id="authEmail" type="email" autocomplete="email" placeholder="nev@email.hu"></div>
+ <div class="field"><label for="authPassword">Jelszó</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Jelszó (legalább 8 karakter)"></div>
+ <div class="row"><button class="btn" id="switchAuth">Regisztráció</button><button class="btn red" id="submitAuth">Belépés</button></div><div class="status" id="authStatus"></div>
+ <p class="note">Regisztráció után lehet, hogy e-mailben meg kell erősítened a címedet.</p>
+</div></div>
+
+<div class="modal" id="uploadModal"><div class="dialog"><button class="close" data-close>×</button><h2>Videó feltöltése</h2>
+ <div class="field"><label for="videoTitle">Videó címe</label><input id="videoTitle" maxlength="120" placeholder="Add meg a videó címét"></div>
+ <div class="field"><label for="videoDescription">Leírás</label><textarea id="videoDescription" maxlength="2000" placeholder="Rövid leírás (nem kötelező)"></textarea></div>
+ <div class="field"><label for="videoCategory">Kategória</label><select id="videoCategory"><option>Film</option><option>Zene</option><option>Sport</option><option>Szórakozás</option><option>Oktatás</option><option>Egyéb</option></select></div>
+ <div class="field"><label for="videoFile">Videófájl (MP4 vagy WebM, legfeljebb 50 MB)</label><input id="videoFile" type="file" accept="video/mp4,video/webm"></div>
+ <p class="note">A feltöltött videó először ellenőrzésre vár. Csak saját vagy megosztásra engedélyezett videót tölts fel.</p>
+ <div class="row"><button class="btn" data-close>Mégse</button><button class="btn red" id="submitUpload">Feltöltés</button></div><div class="status" id="uploadStatus"></div>
+</div></div>
+
+<div class="modal" id="viewerModal"><div class="dialog viewer"><button class="close" data-close>×</button><video id="viewerVideo" controls playsinline></video><h2 id="viewerTitle"></h2><div class="meta" id="viewerMeta"></div><p id="viewerDescription"></p></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+ const SUPABASE_URL = 'https://ssqorockqvzoymvqxcej.supabase.co';
+ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_NgZzwfGxnQBVMmOcUIXrAw_9cHQOXJ9';
+ const MAX_FILE_SIZE = 50 * 1024 * 1024;
+ const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+ const $ = id => document.getElementById(id);
+ const grid = $('videoGrid');
+ let currentUser = null, authMode = 'login', activeCategory = 'Összes', videos = [], viewerUrl = null;
+
+ const showModal = id => $(id).classList.add('show');
+ const hideModals = () => document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
+ document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', hideModals));
+ document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) hideModals(); }));
+
+ function status(id, message, type='') { const el=$(id); el.textContent=message; el.className='status '+type; }
+ function safeText(tag, text, cls) { const el=document.createElement(tag); if(cls) el.className=cls; el.textContent=text ?? ''; return el; }
+
+ async function refreshUser() {
+   const {data:{session}} = await client.auth.getSession();
+   currentUser = session?.user ?? null;
+   $('authButton').textContent = currentUser ? 'Kilépés' : 'Belépés';
+ }
+ async function loadVideos() {
+   grid.replaceChildren(safeText('div','Videók betöltése…','empty'));
+   const {data,error} = await client.from('videos').select('id,title,description,category,storage_path,created_at,views').eq('status','published').order('created_at',{ascending:false}).limit(80);
+   if(error) { grid.replaceChildren(safeText('div','Nem sikerült betölteni a videókat. Ellenőrizd az adatbázis biztonsági szabályait.','empty')); console.error(error); return; }
+   videos = data || []; renderVideos();
+ }
+ function renderVideos() {
+   const q=$('searchInput').value.trim().toLocaleLowerCase('hu');
+   const filtered=videos.filter(v => (activeCategory==='Összes'||v.category===activeCategory) && (v.title+' '+(v.description||'')).toLocaleLowerCase('hu').includes(q));
+   grid.replaceChildren();
+   if(!filtered.length){grid.append(safeText('div','Még nincs megjeleníthető videó ebben a kategóriában.','empty'));return;}
+   filtered.forEach(v=>{
+     const card=document.createElement('article');card.className='card';
+     const poster=document.createElement('div');poster.className='poster';poster.append(safeText('div','▶','play'));
+     const tag=safeText('span',v.category||'Videó','tag');poster.append(tag);
+     const details=document.createElement('div');details.className='details';
+     details.append(safeText('h3',v.title),safeText('div',`${v.category||'Egyéb'} · ${new Date(v.created_at).toLocaleDateString('hu-HU')}`,'meta'));
+     card.append(poster,details);card.addEventListener('click',()=>openVideo(v));grid.append(card);
+   });
+ }
+ async function openVideo(v) {
+   const {data} = client.storage.from('videos').getPublicUrl(v.storage_path);
+   $('viewerVideo').src=data.publicUrl; $('viewerTitle').textContent=v.title;
+   $('viewerMeta').textContent=v.category||'Videó'; $('viewerDescription').textContent=v.description||'';
+   showModal('viewerModal');
+   client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
+ }
+ $('viewerVideo').addEventListener('error',()=>{ $('viewerMeta').textContent='A videó jelenleg nem játszható le.'; });
+
+ $('searchForm').addEventListener('submit',e=>{e.preventDefault();renderVideos();});
+ $('categories').addEventListener('click',e=>{const b=e.target.closest('button[data-cat]');if(!b)return;activeCategory=b.dataset.cat;document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));$('sectionTitle').textContent=activeCategory==='Összes'?'Legújabb videók':activeCategory+' videók';renderVideos();});
+
+ $('authButton').addEventListener('click',async()=>{
+   if(currentUser){await client.auth.signOut();await refreshUser();return;}
+   authMode='login';$('authTitle').textContent='Belépés';$('submitAuth').textContent='Belépés';$('switchAuth').textContent='Regisztráció';status('authStatus','');showModal('authModal');
+ });
+ $('switchAuth').addEventListener('click',()=>{authMode=authMode==='login'?'signup':'login';$('authTitle').textContent=authMode==='signup'?'Regisztráció':'Belépés';$('submitAuth').textContent=authMode==='signup'?'Regisztráció':'Belépés';$('switchAuth').textContent=authMode==='signup'?'Már van fiókom':'Regisztráció';status('authStatus','');});
+ $('submitAuth').addEventListener('click',async()=>{
+   const email=$('authEmail').value.trim(),password=$('authPassword').value;
+   if(!email||password.length<8){status('authStatus','Adj meg e-mail címet és legalább 8 karakteres jelszót.','error');return;}
+   $('submitAuth').disabled=true;status('authStatus','Feldolgozás…');
+   try{
+     if(authMode==='signup'){
+       const {data,error}=await client.auth.signUp({email,password});
+       if(error)throw error;
+       status('authStatus',data.session?'Sikeres regisztráció!':'Regisztráció elküldve. Nézd meg az e-mailjeidet a megerősítéshez.','ok');
+     } else {
+       const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;
+       await refreshUser();hideModals();
+     }
+   }catch(e){status('authStatus',e.message||'Hiba történt.','error');}
+   finally{$('submitAuth').disabled=false;}
+ });
+ $('uploadButton').addEventListener('click',async()=>{
+   await refreshUser();
+   if(!currentUser){authMode='login';$('authTitle').textContent='Belépés a feltöltéshez';$('submitAuth').textContent='Belépés';$('switchAuth').textContent='Regisztráció';status('authStatus','A videó feltöltéséhez előbb jelentkezz be.');showModal('authModal');return;}
+   status('uploadStatus','');showModal('uploadModal');
+ });
+ $('submitUpload').addEventListener('click',async()=>{
+   const title=$('videoTitle').value.trim(),file=$('videoFile').files[0],description=$('videoDescription').value.trim(),category=$('videoCategory').value;
+   if(!title||!file){status('uploadStatus','Add meg a címet és válassz videófájlt.','error');return;}
+   if(!['video/mp4','video/webm'].includes(file.type)){status('uploadStatus','Csak MP4 vagy WebM videó tölthető fel.','error');return;}
+   if(file.size>MAX_FILE_SIZE){status('uploadStatus','A fájl nagyobb 50 MB-nál.','error');return;}
+   $('submitUpload').disabled=true;status('uploadStatus','Feltöltés folyamatban…');
+   const ext=file.type==='video/webm'?'webm':'mp4',path=`${currentUser.id}/${crypto.randomUUID()}.${ext}`;
+   try{
+     const {error:storageError}=await client.storage.from('videos').upload(path,file,{contentType:file.type,upsert:false});
+     if(storageError)throw storageError;
+     const {error:rowError}=await client.from('videos').insert({user_id:currentUser.id,title,description,category,storage_path:path,status:'pending'});
+     if(rowError){await client.storage.from('videos').remove([path]);throw rowError;}
+     status('uploadStatus','Sikeres feltöltés! A videó adminisztrátori ellenőrzésre vár.','ok');
+     $('videoTitle').value='';$('videoDescription').value='';$('videoFile').value='';
+   }catch(e){status('uploadStatus',e.message||'A feltöltés nem sikerült.','error');}
+   finally{$('submitUpload').disabled=false;}
+ });
+ client.auth.onAuthStateChange(()=>{refreshUser();});
+ refreshUser();loadVideos();
+})();
+</script>
+</body>
+</html>
