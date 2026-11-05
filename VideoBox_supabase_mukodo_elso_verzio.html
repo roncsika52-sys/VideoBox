@@ -1,4 +1,3 @@
-```
 <!doctype html>
 <html lang="hu">
 <head>
@@ -158,7 +157,13 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    $('submitAuth').disabled=true;status('authStatus','Feldolgozás…');
    try{
      if(authMode==='signup'){
-       const {data,error}=await client.auth.signUp({email,password});
+       const {data,error}=await client.auth.signUp({
+         email,
+         password,
+         options: {
+           emailRedirectTo: 'https://videobox-9fs.pages.dev/'
+         }
+       });
        if(error)throw error;
        status('authStatus',data.session?'Sikeres regisztráció!':'Regisztráció elküldve. Nézd meg az e-mailjeidet a megerősítéshez.','ok');
      } else {
@@ -196,4 +201,3 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 </script>
 </body>
 </html>
-```
