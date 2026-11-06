@@ -36,6 +36,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 .film-empty{grid-column:1/-1;padding:25px;text-align:center;background:#fff;border-radius:9px;color:var(--muted)}
 @media(max-width:950px){.film-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:680px){.film-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.film-poster{height:155px;font-size:15px}.catalog-head h2{font-size:19px}}
+.free-film-badge{display:inline-block;background:#e8f6ee;color:#176b43;border-radius:5px;padding:4px 7px;font-size:10px;font-weight:700;margin:4px 0 8px}.free-player-frame{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#111}.viewer .license-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
 </style>
 </head>
 <body>
@@ -56,10 +57,12 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
   <strong id="filmCount" class="meta">Betöltés…</strong>
  </div>
  <section class="film-grid" id="filmGrid" aria-label="Filmkatalógus"></section>
- <div class="catalog-head"><div><h2>Feltöltött videók</h2><div class="catalog-note">A közösség által feltöltött és közzétett videók.</div></div></div>
+ <div class="catalog-head"><div><h2>Ingyenesen nézhető, nyílt licencű filmek</h2><div class="catalog-note">Ezek a Blender Foundation nyílt licencű rövidfilmjei. A lejátszás az Internet Archive hivatalos beágyazott lejátszójában történik.</div></div></div>
+ <section class="film-grid" id="freeFilmGrid" aria-label="Ingyenes, nyílt licencű filmek"></section>
+ <div class="catalog-head"><div><h2>Feltöltött videók</h2><div class="catalog-note">A közösség által feltöltött és admin által jóváhagyott videók.</div></div></div>
  <section class="grid" id="videoGrid"><div class="empty">Videók betöltése…</div></section>
 </main>
-<footer>© 2026 VideaMax · Csak saját vagy megosztásra engedélyezett videót tölts fel. A feltöltések sikeres feltöltés után jelennek meg.</footer>
+<footer>© 2026 VideaMax · Csak saját vagy megosztásra engedélyezett videót tölts fel. A feltöltések ellenőrzés után jelennek meg.</footer>
 
 <div class="modal" id="authModal"><div class="dialog"><button class="close" data-close>×</button><h2 id="authTitle">Belépés</h2>
  <div class="field"><label for="authEmail">E-mail cím</label><input id="authEmail" type="email" autocomplete="email" placeholder="nev@email.hu"></div>
@@ -73,12 +76,13 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  <div class="field"><label for="videoDescription">Leírás</label><textarea id="videoDescription" maxlength="2000" placeholder="Rövid leírás (nem kötelező)"></textarea></div>
  <div class="field"><label for="videoCategory">Kategória</label><select id="videoCategory"><option>Film</option><option>Zene</option><option>Sport</option><option>Szórakozás</option><option>Oktatás</option><option>Egyéb</option></select></div>
  <div class="field"><label for="videoFile">Videófájl (MP4 vagy WebM, legfeljebb 50 MB)</label><input id="videoFile" type="file" accept="video/mp4,video/webm"></div>
- <p class="note">A sikeresen feltöltött videó automatikusan megjelenik. Csak saját vagy megosztásra engedélyezett videót tölts fel.</p>
+ <p class="note">A feltöltött videó először ellenőrzésre vár. Csak saját vagy megosztásra engedélyezett videót tölts fel.</p>
  <div class="row"><button class="btn" data-close>Mégse</button><button class="btn red" id="submitUpload">Feltöltés</button></div><div class="status" id="uploadStatus"></div>
 </div></div>
 
 <div class="modal" id="viewerModal"><div class="dialog viewer"><button class="close" data-close>×</button><video id="viewerVideo" controls playsinline></video><h2 id="viewerTitle"></h2><div class="meta" id="viewerMeta"></div><p id="viewerDescription"></p></div></div>
 <div class="modal" id="filmModal"><div class="dialog viewer"><button class="close" data-close>×</button><h2 id="filmPlayerTitle">Film adatlap</h2><video id="filmPlayer" controls playsinline preload="metadata" style="display:none"></video><div id="filmPlayerMessage" class="note">Ehhez a filmhez még nincs jogszerűen használható videófájl feltöltve. Saját vagy engedéllyel használható videót az admin tölthet fel, és jóváhagyás után itt lejátszható.</div><p id="filmPlayerDescription"></p><div class="film-actions"><a id="filmTrailerLink" target="_blank" rel="noopener noreferrer">Előzetes keresése</a></div></div></div>
+<div class="modal" id="freeFilmModal"><div class="dialog viewer"><button class="close" data-close>×</button><h2 id="freeFilmTitle">Ingyenes film</h2><iframe id="freeFilmFrame" class="free-player-frame" title="Film lejátszó" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe><div id="freeFilmLicense" class="license-note"></div></div></div>
 <div class="modal" id="adminModal"><div class="dialog"><button class="close" data-close>×</button><h2>Admin – ellenőrzésre váró videók</h2><div id="adminList" class="note">Betöltés…</div><div class="status" id="adminStatus"></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -195,18 +199,35 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    card.addEventListener('click',e=>{if(!e.target.closest('a'))openFilm(f);});box.append(card);
   });
  }
- function normalizeTitle(value){
-  return String(value||'').toLocaleLowerCase('hu').normalize('NFD')
-   .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+ const freeFilms = [
+  {title:'Big Buck Bunny',year:'2008',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'BigBuckBunny_124',credit:'Blender Foundation · CC BY 3.0'},
+  {title:'Sintel',year:'2010',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'Sintel',credit:'Blender Foundation · CC BY 3.0'},
+  {title:'Tears of Steel',year:'2012',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'TearsOfSteel',credit:'Blender Foundation · CC BY 3.0'},
+  {title:'Elephants Dream',year:'2006',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'ElephantsDream',credit:'Blender Foundation · CC BY 3.0'}
+ ];
+ function renderFreeFilms(){
+  const box=$('freeFilmGrid');if(!box)return;box.replaceChildren();
+  freeFilms.forEach(f=>{
+   const card=document.createElement('article');card.className='film-card';
+   const poster=document.createElement('div');poster.className='film-poster';poster.append(safeText('span','▶','poster-title'));
+   const info=document.createElement('div');info.className='film-info';
+   info.append(safeText('h3',f.title),safeText('div',f.studio+' · '+f.year,'meta'),safeText('span',f.license,'free-film-badge'),safeText('p','Nyílt licencű animációs rövidfilm. Lejátszás az oldalon.'));
+   const actions=document.createElement('div');actions.className='film-actions';
+   const play=document.createElement('a');play.href='#';play.textContent='Lejátszás';play.addEventListener('click',e=>{e.preventDefault();openFreeFilm(f);});
+   actions.append(play);info.append(actions);card.append(poster,info);card.addEventListener('click',e=>{if(!e.target.closest('a'))openFreeFilm(f);});box.append(card);
+  });
  }
+ function openFreeFilm(f){
+  $('freeFilmTitle').textContent=f.title;
+  $('freeFilmFrame').src='https://archive.org/embed/'+encodeURIComponent(f.id);
+  $('freeFilmLicense').textContent='Forrás: Internet Archive · Készítő: '+f.credit+'. Licenc: '+f.license+'. A film külső, hivatalos beágyazott lejátszóból indul.';
+  showModal('freeFilmModal');
+ }
+
  function openFilm(f){
-  const wanted=normalizeTitle(f[0]);
-  const match=videos.find(v=>normalizeTitle(v.title)===wanted && v.storage_path);
-  if(match){openVideo(match);return;}
   $('filmPlayerTitle').textContent=f[0];
   $('filmPlayerDescription').textContent=f[3]+' · '+f[1]+' · '+f[2];
   const player=$('filmPlayer');player.pause();player.removeAttribute('src');player.load();player.style.display='none';
-  $('filmPlayerMessage').textContent='Ehhez a filmhez még nincs feltöltött és közzétett videó. Tölts fel saját vagy megosztásra engedélyezett videót pontosan ezzel a címmel: '+f[0]+'.';
   $('filmPlayerMessage').style.display='block';
   $('filmTrailerLink').href='https://www.youtube.com/results?search_query='+encodeURIComponent(f[0]+' hivatalos előzetes');
   showModal('filmModal');
@@ -215,7 +236,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 
 
  const showModal = id => $(id).classList.add('show');
- const hideModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); $('viewerVideo').pause(); $('filmPlayer').pause(); };
+ const hideModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); $('viewerVideo').pause(); $('filmPlayer').pause(); $('freeFilmFrame').src='about:blank'; };
  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', hideModals));
  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) hideModals(); }));
 
@@ -254,17 +275,11 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    });
  }
  async function openVideo(v) {
-  const {data} = client.storage.from('videos').getPublicUrl(v.storage_path);
-  const player=$('viewerVideo');
-  player.pause();player.src=data.publicUrl;player.load();
-  $('viewerTitle').textContent=v.title;
-  $('viewerMeta').textContent=v.category||'Videó'; $('viewerDescription').textContent=v.description||'';
-  showModal('viewerModal');
-  const result=player.play();
-  if(result && typeof result.catch==='function'){
-   result.catch(()=>{$('viewerMeta').textContent=(v.category||'Videó')+' · Ha nem indul el automatikusan, nyomd meg a lejátszás gombot.';});
-  }
-  client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
+   const {data} = client.storage.from('videos').getPublicUrl(v.storage_path);
+   $('viewerVideo').src=data.publicUrl; $('viewerTitle').textContent=v.title;
+   $('viewerMeta').textContent=v.category||'Videó'; $('viewerDescription').textContent=v.description||'';
+   showModal('viewerModal');
+   client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
  }
  
  async function loadAdminQueue() {
@@ -330,15 +345,15 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    try{
      const {error:storageError}=await client.storage.from('videos').upload(path,file,{contentType:file.type,upsert:false});
      if(storageError)throw storageError;
-     const {error:rowError}=await client.from('videos').insert({user_id:currentUser.id,title,description,category,storage_path:path,status:'published'});
+     const {error:rowError}=await client.from('videos').insert({user_id:currentUser.id,title,description,category,storage_path:path,status:'pending'});
      if(rowError){await client.storage.from('videos').remove([path]);throw rowError;}
-     status('uploadStatus','Sikeres feltöltés! A videó közzétéve, megjelenik a listában.','ok');
+     status('uploadStatus','Sikeres feltöltés! A videó adminisztrátori ellenőrzésre vár.','ok');
      $('videoTitle').value='';$('videoDescription').value='';$('videoFile').value='';
    }catch(e){status('uploadStatus',e.message||'A feltöltés nem sikerült.','error');}
    finally{$('submitUpload').disabled=false;}
  });
  client.auth.onAuthStateChange(()=>{refreshUser();});
- refreshUser();renderFilmCatalog();loadVideos();
+ refreshUser();renderFilmCatalog();renderFreeFilms();loadVideos();
 })();
 </script>
 </body>
