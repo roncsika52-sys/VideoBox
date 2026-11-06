@@ -92,13 +92,15 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
  <div class="field"><label for="videoDescription">Leírás</label><textarea id="videoDescription" maxlength="2000" placeholder="Rövid leírás (nem kötelező)"></textarea></div>
  <div class="field"><label for="videoCategory">Kategória</label><select id="videoCategory"><option>Film</option><option>Zene</option><option>Sport</option><option>Szórakozás</option><option>Oktatás</option><option>Egyéb</option></select></div>
  <div class="field"><label for="videoFile">Videófájl (MP4 vagy WebM, legfeljebb 50 MB)</label><input id="videoFile" type="file" accept="video/mp4,video/webm"></div>
+ <div class="field"><label for="videoUrl">Vagy közvetlen videólink (MP4/WebM)</label><input id="videoUrl" type="url" placeholder="https://pelda.hu/film.mp4"></div>
+ <p class="note">A linknek közvetlen MP4 vagy WebM videófájlra kell mutatnia, és a tárhelynek engednie kell a böngészős lejátszást (CORS). YouTube-oldal linkje nem közvetlen videófájl.</p>
  <p class="note">A feltöltött videó először ellenőrzésre vár. Csak saját vagy megosztásra engedélyezett videót tölts fel.</p>
  <div class="row"><button class="btn" data-close>Mégse</button><button class="btn red" id="submitUpload">Feltöltés</button></div><div class="status" id="uploadStatus"></div>
 </div></div>
 
 <div class="modal" id="viewerModal"><div class="dialog viewer"><button class="close" data-close>×</button><video id="viewerVideo" controls playsinline></video><h2 id="viewerTitle"></h2><div class="meta" id="viewerMeta"></div><p id="viewerDescription"></p></div></div>
 <div class="modal" id="filmModal"><div class="dialog viewer"><button class="close" data-close>×</button><h2 id="filmPlayerTitle">Film adatlap</h2><video id="filmPlayer" controls playsinline preload="metadata" style="display:none"></video><div id="filmPlayerMessage" class="note">Ehhez a filmhez még nincs jogszerűen használható videófájl feltöltve. Saját vagy engedéllyel használható videót az admin tölthet fel, és jóváhagyás után itt lejátszható.</div><p id="filmPlayerDescription"></p><div class="film-actions"><a id="filmTrailerLink" target="_blank" rel="noopener noreferrer">Előzetes keresése</a></div></div></div>
-<div class="modal" id="freeFilmModal"><div class="dialog viewer"><button class="close" data-close>×</button><h2 id="freeFilmTitle">Ingyenes film</h2><iframe id="freeFilmFrame" class="free-player-frame" title="Film lejátszó" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe><div id="freeFilmLicense" class="license-note"></div></div></div>
+<div class="modal" id="freeFilmModal"><div class="dialog viewer"><button class="close" data-close>×</button><h2 id="freeFilmTitle">Ingyenes film</h2><video id="freeFilmVideo" controls playsinline style="display:none;width:100%;max-height:70vh;background:#000;border-radius:8px"></video><iframe id="freeFilmFrame" class="free-player-frame" title="Film lejátszó" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe><div id="freeFilmUnavailable" class="note" style="display:none;margin-top:12px"></div><div id="freeFilmLicense" class="license-note"></div></div></div>
 <div class="modal" id="adminModal"><div class="dialog"><button class="close" data-close>×</button><h2>Admin – ellenőrzésre váró videók</h2><div id="adminList" class="note">Betöltés…</div><div class="status" id="adminStatus"></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -271,19 +273,25 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
    const info=document.createElement('div');info.className='film-info';
    info.append(safeText('h3',f.title),safeText('div',f.genre+' · '+f.year,'meta'),safeText('span',f.license+' · szabad licenc','free-film-badge'),safeText('p','Nyílt licencű Blender-film. A hivatalos oldalon nézhető meg és onnan tölthető le, ha a letöltés elérhető.'));
    const actions=document.createElement('div');actions.className='film-actions';
-   if(f.id){
-    const play=document.createElement('a');play.href='#';play.textContent='Lejátszás itt';play.addEventListener('click',e=>{e.preventDefault();openFreeFilm(f);});actions.append(play);
-   }
-   const source=document.createElement('a');source.href=f.source;source.target='_blank';source.rel='noopener noreferrer';source.textContent='Megnézés / letöltés';source.className=f.id?'secondary':'';
-   actions.append(source);info.append(actions);card.append(poster,info);
-   card.addEventListener('click',e=>{if(!e.target.closest('a')){if(f.id)openFreeFilm(f);else window.open(f.source,'_blank','noopener');}});
+   const play=document.createElement('a');play.href='#';play.textContent='Megnyitás a VideaMaxon';play.addEventListener('click',e=>{e.preventDefault();openFreeFilm(f);});actions.append(play);
+   info.append(actions);card.append(poster,info);
+   card.addEventListener('click',e=>{if(!e.target.closest('a'))openFreeFilm(f);});
    box.append(card);
   });
  }
  function openFreeFilm(f){
   $('freeFilmTitle').textContent=f.title;
-  $('freeFilmFrame').src='https://archive.org/embed/'+encodeURIComponent(f.id);
-  $('freeFilmLicense').textContent='Forrás: Internet Archive · Készítő: '+f.credit+'. Licenc: '+f.license+'. A film külső, hivatalos beágyazott lejátszóból indul.';
+  const frame=$('freeFilmFrame'),video=$('freeFilmVideo'),msg=$('freeFilmUnavailable');
+  video.pause();video.removeAttribute('src');video.load();video.style.display='none';frame.style.display='none';frame.src='about:blank';
+  if(f.id){
+   frame.style.display='block';frame.src='https://archive.org/embed/'+encodeURIComponent(f.id);
+   $('freeFilmLicense').textContent='A lejátszó a VideaMax ablakán belül jelenik meg. Készítő: '+f.credit+'. Licenc: '+f.license+'.';
+   msg.style.display='none';
+  } else {
+   msg.style.display='block';
+   $('freeFilmLicense').textContent='Készítő: '+f.credit+'. Licenc: '+f.license+'.';
+   msg.textContent='Ehhez a filmhez még nincs ellenőrzött, közvetlen videófájl vagy beágyazási cím, ezért nem indítok külső oldalra átirányítást. Adminisztrátorként MP4/WebM fájlt vagy közvetlen videólinket tölthetsz fel hozzá.';
+  }
   showModal('freeFilmModal');
  }
 
@@ -299,7 +307,7 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
 
 
  const showModal = id => $(id).classList.add('show');
- const hideModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); $('viewerVideo').pause(); $('filmPlayer').pause(); $('freeFilmFrame').src='about:blank'; };
+ const hideModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); $('viewerVideo').pause(); $('filmPlayer').pause(); $('freeFilmFrame').src='about:blank'; $('freeFilmVideo').pause(); $('freeFilmVideo').removeAttribute('src'); $('freeFilmVideo').load(); };
  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', hideModals));
  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) hideModals(); }));
 
@@ -338,7 +346,8 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
    });
  }
  async function openVideo(v) {
-   const {data} = client.storage.from('videos').getPublicUrl(v.storage_path);
+   const isDirectUrl=/^https:\/\//i.test(v.storage_path||'');
+   const {data} = isDirectUrl ? {data:{publicUrl:v.storage_path}} : client.storage.from('videos').getPublicUrl(v.storage_path);
    $('viewerVideo').src=data.publicUrl; $('viewerTitle').textContent=v.title;
    $('viewerMeta').textContent=v.category||'Videó'; $('viewerDescription').textContent=v.description||'';
    showModal('viewerModal');
@@ -399,19 +408,24 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
    status('uploadStatus','');showModal('uploadModal');
  });
  $('submitUpload').addEventListener('click',async()=>{
-   const title=$('videoTitle').value.trim(),file=$('videoFile').files[0],description=$('videoDescription').value.trim(),category=$('videoCategory').value;
-   if(!title||!file){status('uploadStatus','Add meg a címet és válassz videófájlt.','error');return;}
-   if(!['video/mp4','video/webm'].includes(file.type)){status('uploadStatus','Csak MP4 vagy WebM videó tölthető fel.','error');return;}
-   if(file.size>MAX_FILE_SIZE){status('uploadStatus','A fájl nagyobb 50 MB-nál.','error');return;}
+   const title=$('videoTitle').value.trim(),file=$('videoFile').files[0],url=$('videoUrl').value.trim(),description=$('videoDescription').value.trim(),category=$('videoCategory').value;
+   if(!title||(!file&&!url)){status('uploadStatus','Add meg a címet, és válassz fájlt vagy adj meg közvetlen MP4/WebM linket.','error');return;}
+   if(file&&url){status('uploadStatus','Egyszerre csak fájlt vagy linket adj meg.','error');return;}
+   if(file&&!['video/mp4','video/webm'].includes(file.type)){status('uploadStatus','Csak MP4 vagy WebM videó tölthető fel.','error');return;}
+   if(file&&file.size>MAX_FILE_SIZE){status('uploadStatus','A fájl nagyobb 50 MB-nál.','error');return;}
+   if(url&&!/^https:\/\/.+\.(mp4|webm)(\?.*)?$/i.test(url)){status('uploadStatus','A linknek közvetlen HTTPS MP4 vagy WebM fájlra kell mutatnia.','error');return;}
    $('submitUpload').disabled=true;status('uploadStatus','Feltöltés folyamatban…');
-   const ext=file.type==='video/webm'?'webm':'mp4',path=`${currentUser.id}/${crypto.randomUUID()}.${ext}`;
+   let path=url;
    try{
-     const {error:storageError}=await client.storage.from('videos').upload(path,file,{contentType:file.type,upsert:false});
-     if(storageError)throw storageError;
+     if(file){
+       const ext=file.type==='video/webm'?'webm':'mp4';path=`${currentUser.id}/${crypto.randomUUID()}.${ext}`;
+       const {error:storageError}=await client.storage.from('videos').upload(path,file,{contentType:file.type,upsert:false});
+       if(storageError)throw storageError;
+     }
      const {error:rowError}=await client.from('videos').insert({user_id:currentUser.id,title,description,category,storage_path:path,status:'pending'});
-     if(rowError){await client.storage.from('videos').remove([path]);throw rowError;}
-     status('uploadStatus','Sikeres feltöltés! A videó adminisztrátori ellenőrzésre vár.','ok');
-     $('videoTitle').value='';$('videoDescription').value='';$('videoFile').value='';
+     if(rowError){if(file)await client.storage.from('videos').remove([path]);throw rowError;}
+     status('uploadStatus','Sikeres beküldés! Adminisztrátori ellenőrzés után jelenik meg.','ok');
+     $('videoTitle').value='';$('videoDescription').value='';$('videoFile').value='';$('videoUrl').value='';
    }catch(e){status('uploadStatus',e.message||'A feltöltés nem sikerült.','error');}
    finally{$('submitUpload').disabled=false;}
  });
