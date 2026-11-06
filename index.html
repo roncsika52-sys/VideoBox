@@ -23,8 +23,6 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 @media(max-width:950px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){.top{flex-wrap:wrap;gap:9px}.logo{font-size:24px}.search{order:3;flex-basis:100%;max-width:none}.actions{margin-left:auto}.btn{padding:9px 10px;font-size:12px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.poster{height:125px}.intro h1{font-size:20px}}
 @media(max-width:390px){.grid{grid-template-columns:1fr}.poster{height:180px}}
-
-/* VideaMax filmes katalógus */
 .catalog-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:30px 0 14px;flex-wrap:wrap}
 .catalog-head h2{margin:0;font-size:22px}.catalog-note{font-size:12px;color:var(--muted);margin-top:5px}
 .film-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:15px}
@@ -59,6 +57,8 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  <section class="film-grid" id="filmGrid" aria-label="Filmkatalógus"></section>
  <div class="catalog-head"><div><h2>Ingyenesen nézhető, nyílt licencű filmek</h2><div class="catalog-note">Ezek a Blender Foundation nyílt licencű rövidfilmjei. A lejátszás az Internet Archive hivatalos beágyazott lejátszójában történik.</div></div></div>
  <section class="film-grid" id="freeFilmGrid" aria-label="Ingyenes, nyílt licencű filmek"></section>
+ <div class="catalog-head"><div><h2>Régi, közkincsnek jelölt egész estés filmek</h2><div class="catalog-note">A katalógusban közkincsnek vagy szabadon megoszthatónak jelölt klasszikusok. A megtekintés a forrásoldalon indul; a jogállás országonként eltérhet.</div></div></div>
+ <section class="film-grid" id="publicDomainGrid" aria-label="Közkincs klasszikus filmek"></section>
  <div class="catalog-head"><div><h2>Feltöltött videók</h2><div class="catalog-note">A közösség által feltöltött és admin által jóváhagyott videók.</div></div></div>
  <section class="grid" id="videoGrid"><div class="empty">Videók betöltése…</div></section>
 </main>
@@ -92,10 +92,11 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_NgZzwfGxnQBVMmOcUIXrAw_9cHQOXJ9';
  const MAX_FILE_SIZE = 50 * 1024 * 1024;
  const SITE_URL = 'https://videobox-9fs.pages.dev/';
-  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+ const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
  const $ = id => document.getElementById(id);
  const grid = $('videoGrid');
  let currentUser = null, isAdmin = false, authMode = 'login', activeCategory = 'Összes', videos = [];
+
  const filmCatalog = [
   ['Predator – A ragadozó','Akció / sci-fi','1987','Egy mentőcsapat különös veszéllyel találkozik a dzsungelben.'],
   ['A bolygó neve: Halál','Sci-fi','1986','Egy távoli kolónián játszódó sci-fi kaland.'],
@@ -128,9 +129,8 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
   ['Top Gun: Maverick','Akció / dráma','2022','Pilóták és repülési kihívások.'],
   ['Karate kölyök','Családi / sport','1984','Egy fiatal megtanul kitartani és fejlődni.']
  ];
- // Filmplakátok lekérése a Wikipédia nyilvános oldal-előnézeteiből.
- // A borítóképek a böngészőben töltődnek be, nem a Supabase-tárhelyet használják.
- const filmPosterPages={
+
+ const filmPosterPages = {
   'Predator – A ragadozó':'Predator (film)',
   'A bolygó neve: Halál':'Aliens (film)',
   'Vissza a jövőbe':'Back to the Future',
@@ -162,198 +162,468 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
   'Top Gun: Maverick':'Top Gun: Maverick',
   'Karate kölyök':'The Karate Kid (1984 film)'
  };
- const posterCache=new Map();
- async function loadFilmPoster(img,title){
-  const page=filmPosterPages[title];if(!page)return;
+
+ const posterCache = new Map();
+
+ async function loadFilmPoster(img,title) {
+  const page=filmPosterPages[title];
+  if(!page)return;
   if(posterCache.has(page)){img.src=posterCache.get(page);return;}
-  try{
+  try {
    const url='https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(page.replace(/ /g,'_'));
    const response=await fetch(url,{headers:{'Accept':'application/json'}});
    if(!response.ok)throw new Error('Poster nem található');
    const data=await response.json();
    const src=data.thumbnail?.source||data.originalimage?.source;
    if(!src)throw new Error('Nincs borítókép');
-   posterCache.set(page,src);img.src=src;
-  }catch(error){img.remove();}
+   posterCache.set(page,src);
+   img.src=src;
+  } catch(error) {
+   img.remove();
+  }
  }
- function renderFilmCatalog(){
-  const box=$('filmGrid'); if(!box)return; box.replaceChildren();
+
+ function renderFilmCatalog() {
+  const box=$('filmGrid');
+  if(!box)return;
+  box.replaceChildren();
   const query=$('searchInput').value.trim().toLocaleLowerCase('hu');
-  const chosen=filmCatalog.filter(f=>(activeCategory==='Összes'||f[1].toLocaleLowerCase('hu').includes(activeCategory.toLocaleLowerCase('hu'))||activeCategory==='Film') && f.join(' ').toLocaleLowerCase('hu').includes(query));
+  const chosen=filmCatalog.filter(f=>
+   (activeCategory==='Összes'||
+    f[1].toLocaleLowerCase('hu').includes(activeCategory.toLocaleLowerCase('hu'))||
+    activeCategory==='Film')&&
+   f.join(' ').toLocaleLowerCase('hu').includes(query)
+  );
   $('filmCount').textContent=chosen.length+' film';
-  if(!chosen.length){box.append(safeText('div','Nincs találat a katalógusban.','film-empty'));return;}
+  if(!chosen.length) {
+   box.append(safeText('div','Nincs találat a katalógusban.','film-empty'));
+   return;
+  }
   chosen.forEach(f=>{
-   const card=document.createElement('article');card.className='film-card';
-   const poster=document.createElement('div');poster.className='film-poster';
-   const img=document.createElement('img');img.alt=f[0]+' borítókép';img.loading='lazy';img.referrerPolicy='no-referrer';
+   const card=document.createElement('article');
+   card.className='film-card';
+   const poster=document.createElement('div');
+   poster.className='film-poster';
+   const img=document.createElement('img');
+   img.alt=f[0]+' borítókép';
+   img.loading='lazy';
+   img.referrerPolicy='no-referrer';
    img.onerror=()=>{img.remove();poster.classList.remove('has-image');};
    img.addEventListener('load',()=>poster.classList.add('has-image'),{once:true});
    poster.append(img,safeText('span',f[0],'poster-title'));
    loadFilmPoster(img,f[0]);
-   const info=document.createElement('div');info.className='film-info';
+   const info=document.createElement('div');
+   info.className='film-info';
    info.append(safeText('h3',f[0]),safeText('div',f[1]+' · '+f[2],'meta'),safeText('p',f[3]));
-   const actions=document.createElement('div');actions.className='film-actions';
-   const open=document.createElement('a');open.href='#';open.textContent='Megnyitás';open.addEventListener('click',e=>{e.preventDefault();openFilm(f);});
-   const trailer=document.createElement('a');trailer.className='secondary';trailer.href='https://www.youtube.com/results?search_query='+encodeURIComponent(f[0]+' hivatalos előzetes');trailer.target='_blank';trailer.rel='noopener noreferrer';trailer.textContent='Előzetes';
-   actions.append(open,trailer);info.append(actions);card.append(poster,info);
-   card.addEventListener('click',e=>{if(!e.target.closest('a'))openFilm(f);});box.append(card);
+   const actions=document.createElement('div');
+   actions.className='film-actions';
+   const open=document.createElement('a');
+   open.href='#';
+   open.textContent='Megnyitás';
+   open.addEventListener('click',e=>{e.preventDefault();openFilm(f);});
+   const trailer=document.createElement('a');
+   trailer.className='secondary';
+   trailer.href='https://www.youtube.com/results?search_query='+encodeURIComponent(f[0]+' hivatalos előzetes');
+   trailer.target='_blank';
+   trailer.rel='noopener noreferrer';
+   trailer.textContent='Előzetes';
+   actions.append(open,trailer);
+   info.append(actions);
+   card.append(poster,info);
+   card.addEventListener('click',e=>{if(!e.target.closest('a'))openFilm(f);});
+   box.append(card);
   });
  }
+
+ const publicDomainFilms = [
+  {title:'Why Worry? (1923)',year:'1923',description:'Némafilmes vígjáték.',url:'https://archivewatch.org/'},
+  {title:'The Kid Brother (1927)',year:'1927',description:'Klasszikus némafilmes vígjáték.',url:'https://archivewatch.org/'},
+  {title:'The General (1926)',year:'1926',description:'Némafilmes kalandvígjáték.',url:'https://archivewatch.org/'}
+ ];
+
+ function renderPublicDomainFilms() {
+  const box=$('publicDomainGrid');
+  if(!box)return;
+  box.replaceChildren();
+  publicDomainFilms.forEach(f=>{
+   const card=document.createElement('article');
+   card.className='film-card';
+   const poster=document.createElement('div');
+   poster.className='film-poster';
+   poster.append(safeText('span','KÖZKINCS-KATALÓGUS','poster-title'));
+   const info=document.createElement('div');
+   info.className='film-info';
+   info.append(
+    safeText('h3',f.title),
+    safeText('div',f.year+' · klasszikus','meta'),
+    safeText('p',f.description+' A forrásoldalon ellenőrizhető a film adatlapja és lejátszása.')
+   );
+   const actions=document.createElement('div');
+   actions.className='film-actions';
+   const link=document.createElement('a');
+   link.href=f.url;
+   link.target='_blank';
+   link.rel='noopener noreferrer';
+   link.textContent='Megnézés a forrásoldalon';
+   actions.append(link);
+   info.append(actions);
+   card.append(poster,info);
+   box.append(card);
+  });
+ }
+
  const freeFilms = [
   {title:'Big Buck Bunny',year:'2008',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'BigBuckBunny_124',credit:'Blender Foundation · CC BY 3.0'},
   {title:'Sintel',year:'2010',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'Sintel',credit:'Blender Foundation · CC BY 3.0'},
   {title:'Tears of Steel',year:'2012',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'TearsOfSteel',credit:'Blender Foundation · CC BY 3.0'},
   {title:'Elephants Dream',year:'2006',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'ElephantsDream',credit:'Blender Foundation · CC BY 3.0'}
  ];
- function renderFreeFilms(){
-  const box=$('freeFilmGrid');if(!box)return;box.replaceChildren();
+
+ function renderFreeFilms() {
+  const box=$('freeFilmGrid');
+  if(!box)return;
+  box.replaceChildren();
   freeFilms.forEach(f=>{
-   const card=document.createElement('article');card.className='film-card';
-   const poster=document.createElement('div');poster.className='film-poster';poster.append(safeText('span','▶','poster-title'));
-   const info=document.createElement('div');info.className='film-info';
-   info.append(safeText('h3',f.title),safeText('div',f.studio+' · '+f.year,'meta'),safeText('span',f.license,'free-film-badge'),safeText('p','Nyílt licencű animációs rövidfilm. Lejátszás az oldalon.'));
-   const actions=document.createElement('div');actions.className='film-actions';
-   const play=document.createElement('a');play.href='#';play.textContent='Lejátszás';play.addEventListener('click',e=>{e.preventDefault();openFreeFilm(f);});
-   actions.append(play);info.append(actions);card.append(poster,info);card.addEventListener('click',e=>{if(!e.target.closest('a'))openFreeFilm(f);});box.append(card);
+   const card=document.createElement('article');
+   card.className='film-card';
+   const poster=document.createElement('div');
+   poster.className='film-poster';
+   poster.append(safeText('span','▶','poster-title'));
+   const info=document.createElement('div');
+   info.className='film-info';
+   info.append(
+    safeText('h3',f.title),
+    safeText('div',f.studio+' · '+f.year,'meta'),
+    safeText('span',f.license,'free-film-badge'),
+    safeText('p','Nyílt licencű animációs rövidfilm. Lejátszás az oldalon.')
+   );
+   const actions=document.createElement('div');
+   actions.className='film-actions';
+   const play=document.createElement('a');
+   play.href='#';
+   play.textContent='Lejátszás';
+   play.addEventListener('click',e=>{e.preventDefault();openFreeFilm(f);});
+   actions.append(play);
+   info.append(actions);
+   card.append(poster,info);
+   card.addEventListener('click',e=>{if(!e.target.closest('a'))openFreeFilm(f);});
+   box.append(card);
   });
  }
- function openFreeFilm(f){
+
+ function openFreeFilm(f) {
   $('freeFilmTitle').textContent=f.title;
   $('freeFilmFrame').src='https://archive.org/embed/'+encodeURIComponent(f.id);
   $('freeFilmLicense').textContent='Forrás: Internet Archive · Készítő: '+f.credit+'. Licenc: '+f.license+'. A film külső, hivatalos beágyazott lejátszóból indul.';
   showModal('freeFilmModal');
  }
 
- function openFilm(f){
+ function openFilm(f) {
   $('filmPlayerTitle').textContent=f[0];
   $('filmPlayerDescription').textContent=f[3]+' · '+f[1]+' · '+f[2];
-  const player=$('filmPlayer');player.pause();player.removeAttribute('src');player.load();player.style.display='none';
+  const player=$('filmPlayer');
+  player.pause();
+  player.removeAttribute('src');
+  player.load();
+  player.style.display='none';
   $('filmPlayerMessage').style.display='block';
   $('filmTrailerLink').href='https://www.youtube.com/results?search_query='+encodeURIComponent(f[0]+' hivatalos előzetes');
   showModal('filmModal');
  }
 
-
-
  const showModal = id => $(id).classList.add('show');
- const hideModals = () => { document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); $('viewerVideo').pause(); $('filmPlayer').pause(); $('freeFilmFrame').src='about:blank'; };
- document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', hideModals));
- document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) hideModals(); }));
 
- function status(id, message, type='') { const el=$(id); el.textContent=message; el.className='status '+type; }
- function safeText(tag, text, cls) { const el=document.createElement(tag); if(cls) el.className=cls; el.textContent=text ?? ''; return el; }
+ const hideModals = () => {
+  document.querySelectorAll('.modal').forEach(m=>m.classList.remove('show'));
+  $('viewerVideo').pause();
+  $('filmPlayer').pause();
+  $('freeFilmFrame').src='about:blank';
+ };
+
+ document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',hideModals));
+ document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{
+  if(e.target===m)hideModals();
+ }));
+
+ function status(id,message,type='') {
+  const el=$(id);
+  el.textContent=message;
+  el.className='status '+type;
+ }
+
+ function safeText(tag,text,cls) {
+  const el=document.createElement(tag);
+  if(cls)el.className=cls;
+  el.textContent=text??'';
+  return el;
+ }
 
  async function refreshUser() {
-   const {data:{session}} = await client.auth.getSession();
-   currentUser = session?.user ?? null;
-   $('authButton').textContent = currentUser ? 'Kilépés' : 'Belépés';
-   isAdmin = false;
-   if (currentUser) {
-     const {data, error} = await client.rpc('videobox_is_admin');
-     if (!error) isAdmin = data === true;
-   }
-   $('adminButton').style.display = isAdmin ? '' : 'none';
+  const {data:{session}}=await client.auth.getSession();
+  currentUser=session?.user??null;
+  $('authButton').textContent=currentUser?'Kilépés':'Belépés';
+  isAdmin=false;
+  if(currentUser) {
+   const {data,error}=await client.rpc('videobox_is_admin');
+   if(!error)isAdmin=data===true;
+  }
+  $('adminButton').style.display=isAdmin?'':'none';
  }
+
  async function loadVideos() {
-   grid.replaceChildren(safeText('div','Videók betöltése…','empty'));
-   const {data,error} = await client.from('videos').select('id,title,description,category,storage_path,created_at,views').eq('status','published').order('created_at',{ascending:false}).limit(80);
-   if(error) { grid.replaceChildren(safeText('div','Nem sikerült betölteni a videókat. Ellenőrizd az adatbázis biztonsági szabályait.','empty')); console.error(error); return; }
-   videos = data || []; renderVideos();
+  grid.replaceChildren(safeText('div','Videók betöltése…','empty'));
+  const {data,error}=await client.from('videos')
+   .select('id,title,description,category,storage_path,created_at,views')
+   .eq('status','published')
+   .order('created_at',{ascending:false})
+   .limit(80);
+  if(error) {
+   grid.replaceChildren(safeText('div','Nem sikerült betölteni a videókat. Ellenőrizd az adatbázis biztonsági szabályait.','empty'));
+   console.error(error);
+   return;
+  }
+  videos=data||[];
+  renderVideos();
  }
+
  function renderVideos() {
-   const q=$('searchInput').value.trim().toLocaleLowerCase('hu');
-   const filtered=videos.filter(v => (activeCategory==='Összes'||v.category===activeCategory) && (v.title+' '+(v.description||'')).toLocaleLowerCase('hu').includes(q));
-   grid.replaceChildren();
-   if(!filtered.length){grid.append(safeText('div','Még nincs megjeleníthető videó ebben a kategóriában.','empty'));return;}
-   filtered.forEach(v=>{
-     const card=document.createElement('article');card.className='card';
-     const poster=document.createElement('div');poster.className='poster';poster.append(safeText('div','▶','play'));
-     const tag=safeText('span',v.category||'Videó','tag');poster.append(tag);
-     const details=document.createElement('div');details.className='details';
-     details.append(safeText('h3',v.title),safeText('div',`${v.category||'Egyéb'} · ${new Date(v.created_at).toLocaleDateString('hu-HU')}`,'meta'));
-     card.append(poster,details);card.addEventListener('click',()=>openVideo(v));grid.append(card);
-   });
+  const q=$('searchInput').value.trim().toLocaleLowerCase('hu');
+  const filtered=videos.filter(v=>
+   (activeCategory==='Összes'||v.category===activeCategory)&&
+   (v.title+' '+(v.description||'')).toLocaleLowerCase('hu').includes(q)
+  );
+  grid.replaceChildren();
+  if(!filtered.length) {
+   grid.append(safeText('div','Még nincs megjeleníthető videó ebben a kategóriában.','empty'));
+   return;
+  }
+  filtered.forEach(v=>{
+   const card=document.createElement('article');
+   card.className='card';
+   const poster=document.createElement('div');
+   poster.className='poster';
+   poster.append(safeText('div','▶','play'));
+   const tag=safeText('span',v.category||'Videó','tag');
+   poster.append(tag);
+   const details=document.createElement('div');
+   details.className='details';
+   details.append(
+    safeText('h3',v.title),
+    safeText('div',`${v.category||'Egyéb'} · ${new Date(v.created_at).toLocaleDateString('hu-HU')}`,'meta')
+   );
+   card.append(poster,details);
+   card.addEventListener('click',()=>openVideo(v));
+   grid.append(card);
+  });
  }
+
  async function openVideo(v) {
-   const {data} = client.storage.from('videos').getPublicUrl(v.storage_path);
-   $('viewerVideo').src=data.publicUrl; $('viewerTitle').textContent=v.title;
-   $('viewerMeta').textContent=v.category||'Videó'; $('viewerDescription').textContent=v.description||'';
-   showModal('viewerModal');
-   client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
+  const {data}=client.storage.from('videos').getPublicUrl(v.storage_path);
+  $('viewerVideo').src=data.publicUrl;
+  $('viewerTitle').textContent=v.title;
+  $('viewerMeta').textContent=v.category||'Videó';
+  $('viewerDescription').textContent=v.description||'';
+  showModal('viewerModal');
+  client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
  }
- 
+
  async function loadAdminQueue() {
-   const box=$('adminList'); box.textContent='Betöltés…';
-   const {data,error}=await client.from('videos').select('id,title,description,category,created_at').eq('status','pending').order('created_at',{ascending:true}).limit(100);
-   if(error){box.textContent='Hiba: '+error.message;return;}
-   box.replaceChildren();
-   if(!data.length){box.textContent='Nincs ellenőrzésre váró videó.';return;}
-   data.forEach(v=>{
-     const item=document.createElement('div');item.style.cssText='border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:10px 0';
-     item.append(safeText('strong',v.title),safeText('p',v.description||'Nincs leírás.'));
-     const ok=safeText('button','Jóváhagyás','btn red'),no=safeText('button','Elutasítás','btn');
-     ok.addEventListener('click',()=>moderateVideo(v,'published'));no.addEventListener('click',()=>moderateVideo(v,'rejected'));
-     item.append(ok,no);box.append(item);
-   });
+  const box=$('adminList');
+  box.textContent='Betöltés…';
+  const {data,error}=await client.from('videos')
+   .select('id,title,description,category,created_at')
+   .eq('status','pending')
+   .order('created_at',{ascending:true})
+   .limit(100);
+  if(error) {
+   box.textContent='Hiba: '+error.message;
+   return;
+  }
+  box.replaceChildren();
+  if(!data.length) {
+   box.textContent='Nincs ellenőrzésre váró videó.';
+   return;
+  }
+  data.forEach(v=>{
+   const item=document.createElement('div');
+   item.style.cssText='border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:10px 0';
+   item.append(safeText('strong',v.title),safeText('p',v.description||'Nincs leírás.'));
+   const ok=safeText('button','Jóváhagyás','btn red');
+   const no=safeText('button','Elutasítás','btn');
+   ok.addEventListener('click',()=>moderateVideo(v,'published'));
+   no.addEventListener('click',()=>moderateVideo(v,'rejected'));
+   item.append(ok,no);
+   box.append(item);
+  });
  }
+
  async function moderateVideo(v,s) {
-   const {error}=await client.from('videos').update({status:s}).eq('id',v.id);
-   if(error){status('adminStatus',error.message,'error');return;}
-   status('adminStatus',s==='published'?'A videó megjelent.':'A videó elutasítva.','ok');
-   await loadAdminQueue();await loadVideos();
+  const {error}=await client.from('videos').update({status:s}).eq('id',v.id);
+  if(error) {
+   status('adminStatus',error.message,'error');
+   return;
+  }
+  status('adminStatus',s==='published'?'A videó megjelent.':'A videó elutasítva.','ok');
+  await loadAdminQueue();
+  await loadVideos();
  }
- $('adminButton').addEventListener('click',async()=>{if(!isAdmin)return;status('adminStatus','');showModal('adminModal');await loadAdminQueue();});
 
- $('viewerVideo').addEventListener('error',()=>{ $('viewerMeta').textContent='A videó jelenleg nem játszható le.'; });
+ $('adminButton').addEventListener('click',async()=>{
+  if(!isAdmin)return;
+  status('adminStatus','');
+  showModal('adminModal');
+  await loadAdminQueue();
+ });
 
- $('searchForm').addEventListener('submit',e=>{e.preventDefault();renderVideos();renderFilmCatalog();});
- $('categories').addEventListener('click',e=>{const b=e.target.closest('button[data-cat]');if(!b)return;activeCategory=b.dataset.cat;document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));$('sectionTitle').textContent=activeCategory==='Összes'?'Legújabb videók':activeCategory+' videók';renderVideos();renderFilmCatalog();});
+ $('viewerVideo').addEventListener('error',()=>{
+  $('viewerMeta').textContent='A videó jelenleg nem játszható le.';
+ });
+
+ $('searchForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  renderVideos();
+  renderFilmCatalog();
+ });
+
+ $('categories').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-cat]');
+  if(!b)return;
+  activeCategory=b.dataset.cat;
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));
+  $('sectionTitle').textContent=activeCategory==='Összes'?'Legújabb videók':activeCategory+' videók';
+  renderVideos();
+  renderFilmCatalog();
+ });
 
  $('authButton').addEventListener('click',async()=>{
-   if(currentUser){await client.auth.signOut();await refreshUser();return;}
-   authMode='login';$('authTitle').textContent='Belépés';$('submitAuth').textContent='Belépés';$('switchAuth').textContent='Regisztráció';status('authStatus','');showModal('authModal');
- });
- $('switchAuth').addEventListener('click',()=>{authMode=authMode==='login'?'signup':'login';$('authTitle').textContent=authMode==='signup'?'Regisztráció':'Belépés';$('submitAuth').textContent=authMode==='signup'?'Regisztráció':'Belépés';$('switchAuth').textContent=authMode==='signup'?'Már van fiókom':'Regisztráció';status('authStatus','');});
- $('submitAuth').addEventListener('click',async()=>{
-   const email=$('authEmail').value.trim(),password=$('authPassword').value;
-   if(!email||password.length<8){status('authStatus','Adj meg e-mail címet és legalább 8 karakteres jelszót.','error');return;}
-   $('submitAuth').disabled=true;status('authStatus','Feldolgozás…');
-   try{
-     if(authMode==='signup'){
-       const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:SITE_URL}});
-       if(error)throw error;
-       status('authStatus',data.session?'Sikeres regisztráció!':'Regisztráció elküldve. Nézd meg az e-mailjeidet a megerősítéshez.','ok');
-     } else {
-       const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;
-       await refreshUser();hideModals();
-     }
-   }catch(e){status('authStatus',e.message||'Hiba történt.','error');}
-   finally{$('submitAuth').disabled=false;}
- });
- $('uploadButton').addEventListener('click',async()=>{
+  if(currentUser) {
+   await client.auth.signOut();
    await refreshUser();
-   if(!currentUser){authMode='login';$('authTitle').textContent='Belépés a feltöltéshez';$('submitAuth').textContent='Belépés';$('switchAuth').textContent='Regisztráció';status('authStatus','A videó feltöltéséhez előbb jelentkezz be.');showModal('authModal');return;}
-   status('uploadStatus','');showModal('uploadModal');
+   return;
+  }
+  authMode='login';
+  $('authTitle').textContent='Belépés';
+  $('submitAuth').textContent='Belépés';
+  $('switchAuth').textContent='Regisztráció';
+  status('authStatus','');
+  showModal('authModal');
  });
+
+ $('switchAuth').addEventListener('click',()=>{
+  authMode=authMode==='login'?'signup':'login';
+  $('authTitle').textContent=authMode==='signup'?'Regisztráció':'Belépés';
+  $('submitAuth').textContent=authMode==='signup'?'Regisztráció':'Belépés';
+  $('switchAuth').textContent=authMode==='signup'?'Már van fiókom':'Regisztráció';
+  status('authStatus','');
+ });
+
+ $('submitAuth').addEventListener('click',async()=>{
+  const email=$('authEmail').value.trim();
+  const password=$('authPassword').value;
+  if(!email||password.length<8) {
+   status('authStatus','Adj meg e-mail címet és legalább 8 karakteres jelszót.','error');
+   return;
+  }
+  $('submitAuth').disabled=true;
+  status('authStatus','Feldolgozás…');
+  try {
+   if(authMode==='signup') {
+    const {data,error}=await client.auth.signUp({
+     email,
+     password,
+     options:{emailRedirectTo:SITE_URL}
+    });
+    if(error)throw error;
+    status('authStatus',data.session?'Sikeres regisztráció!':'Regisztráció elküldve. Nézd meg az e-mailjeidet a megerősítéshez.','ok');
+   } else {
+    const {error}=await client.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    await refreshUser();
+    hideModals();
+   }
+  } catch(e) {
+   status('authStatus',e.message||'Hiba történt.','error');
+  } finally {
+   $('submitAuth').disabled=false;
+  }
+ });
+
+ $('uploadButton').addEventListener('click',async()=>{
+  await refreshUser();
+  if(!currentUser) {
+   authMode='login';
+   $('authTitle').textContent='Belépés a feltöltéshez';
+   $('submitAuth').textContent='Belépés';
+   $('switchAuth').textContent='Regisztráció';
+   status('authStatus','A videó feltöltéséhez előbb jelentkezz be.');
+   showModal('authModal');
+   return;
+  }
+  status('uploadStatus','');
+  showModal('uploadModal');
+ });
+
  $('submitUpload').addEventListener('click',async()=>{
-   const title=$('videoTitle').value.trim(),file=$('videoFile').files[0],description=$('videoDescription').value.trim(),category=$('videoCategory').value;
-   if(!title||!file){status('uploadStatus','Add meg a címet és válassz videófájlt.','error');return;}
-   if(!['video/mp4','video/webm'].includes(file.type)){status('uploadStatus','Csak MP4 vagy WebM videó tölthető fel.','error');return;}
-   if(file.size>MAX_FILE_SIZE){status('uploadStatus','A fájl nagyobb 50 MB-nál.','error');return;}
-   $('submitUpload').disabled=true;status('uploadStatus','Feltöltés folyamatban…');
-   const ext=file.type==='video/webm'?'webm':'mp4',path=`${currentUser.id}/${crypto.randomUUID()}.${ext}`;
-   try{
-     const {error:storageError}=await client.storage.from('videos').upload(path,file,{contentType:file.type,upsert:false});
-     if(storageError)throw storageError;
-     const {error:rowError}=await client.from('videos').insert({user_id:currentUser.id,title,description,category,storage_path:path,status:'pending'});
-     if(rowError){await client.storage.from('videos').remove([path]);throw rowError;}
-     status('uploadStatus','Sikeres feltöltés! A videó adminisztrátori ellenőrzésre vár.','ok');
-     $('videoTitle').value='';$('videoDescription').value='';$('videoFile').value='';
-   }catch(e){status('uploadStatus',e.message||'A feltöltés nem sikerült.','error');}
-   finally{$('submitUpload').disabled=false;}
+  const title=$('videoTitle').value.trim();
+  const file=$('videoFile').files[0];
+  const description=$('videoDescription').value.trim();
+  const category=$('videoCategory').value;
+
+  if(!title||!file) {
+   status('uploadStatus','Add meg a címet és válassz videófájlt.','error');
+   return;
+  }
+  if(!['video/mp4','video/webm'].includes(file.type)) {
+   status('uploadStatus','Csak MP4 vagy WebM videó tölthető fel.','error');
+   return;
+  }
+  if(file.size>MAX_FILE_SIZE) {
+   status('uploadStatus','A fájl nagyobb 50 MB-nál.','error');
+   return;
+  }
+
+  $('submitUpload').disabled=true;
+  status('uploadStatus','Feltöltés folyamatban…');
+  const ext=file.type==='video/webm'?'webm':'mp4';
+  const path=`${currentUser.id}/${crypto.randomUUID()}.${ext}`;
+
+  try {
+   const {error:storageError}=await client.storage.from('videos').upload(
+    path,file,{contentType:file.type,upsert:false}
+   );
+   if(storageError)throw storageError;
+
+   const {error:rowError}=await client.from('videos').insert({
+    user_id:currentUser.id,
+    title,
+    description,
+    category,
+    storage_path:path,
+    status:'pending'
+   });
+
+   if(rowError) {
+    await client.storage.from('videos').remove([path]);
+    throw rowError;
+   }
+
+   status('uploadStatus','Sikeres feltöltés! A videó adminisztrátori ellenőrzésre vár.','ok');
+   $('videoTitle').value='';
+   $('videoDescription').value='';
+   $('videoFile').value='';
+  } catch(e) {
+   status('uploadStatus',e.message||'A feltöltés nem sikerült.','error');
+  } finally {
+   $('submitUpload').disabled=false;
+  }
  });
+
  client.auth.onAuthStateChange(()=>{refreshUser();});
- refreshUser();renderFilmCatalog();renderFreeFilms();loadVideos();
+ refreshUser();
+ renderFilmCatalog();
+ renderFreeFilms();
+ renderPublicDomainFilms();
+ loadVideos();
 })();
 </script>
 </body>
