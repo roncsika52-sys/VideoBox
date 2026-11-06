@@ -52,11 +52,11 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 <main>
  <div class="intro"><div><h1 id="sectionTitle">Legújabb videók</h1><div class="hint" id="subtitle">Nézz videókat, vagy töltsd fel a sajátodat!</div></div></div>
  <div class="catalog-head">
-  <div><h2>Filmkatalógus</h2><div class="catalog-note">Kattints egy filmre a lejátszáshoz. A katalógusfilm akkor indul el, ha azonos címmel feltöltött és jóváhagyott videó tartozik hozzá.</div></div>
+  <div><h2>Filmkatalógus</h2><div class="catalog-note">Plakátképes filmkatalógus. A lejátszó az oldalon nyílik meg; teljes film csak saját vagy engedéllyel feltöltött videóból játszható le.</div></div>
   <strong id="filmCount" class="meta">Betöltés…</strong>
  </div>
  <section class="film-grid" id="filmGrid" aria-label="Filmkatalógus"></section>
- <div class="catalog-head"><div><h2>Feltöltött videók</h2><div class="catalog-note">A közösség által feltöltött és admin által jóváhagyott videók.</div></div></div>
+ <div class="catalog-head"><div><h2>Feltöltött videók</h2><div class="catalog-note">A közösség által feltöltött videók.</div></div></div>
  <section class="grid" id="videoGrid"><div class="empty">Videók betöltése…</div></section>
 </main>
 <footer>© 2026 VideaMax · Csak saját vagy megosztásra engedélyezett videót tölts fel. A feltöltések ellenőrzés után jelennek meg.</footer>
@@ -73,7 +73,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  <div class="field"><label for="videoDescription">Leírás</label><textarea id="videoDescription" maxlength="2000" placeholder="Rövid leírás (nem kötelező)"></textarea></div>
  <div class="field"><label for="videoCategory">Kategória</label><select id="videoCategory"><option>Film</option><option>Zene</option><option>Sport</option><option>Szórakozás</option><option>Oktatás</option><option>Egyéb</option></select></div>
  <div class="field"><label for="videoFile">Videófájl (MP4 vagy WebM, legfeljebb 50 MB)</label><input id="videoFile" type="file" accept="video/mp4,video/webm"></div>
- <p class="note">A feltöltött videó először ellenőrzésre vár. Csak saját vagy megosztásra engedélyezett videót tölts fel.</p>
+ <p class="note">A sikeresen feltöltött videó automatikusan megjelenik. Csak saját vagy megosztásra engedélyezett videót tölts fel.</p>
  <div class="row"><button class="btn" data-close>Mégse</button><button class="btn red" id="submitUpload">Feltöltés</button></div><div class="status" id="uploadStatus"></div>
 </div></div>
 
@@ -145,17 +145,10 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    card.addEventListener('click',e=>{if(!e.target.closest('a'))openFilm(f);});box.append(card);
   });
  }
- function normalizeTitle(value){
-  return String(value||'').toLocaleLowerCase('hu').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
- }
  function openFilm(f){
-  const wanted=normalizeTitle(f[0]);
-  const match=videos.find(v=>normalizeTitle(v.title)===wanted && v.storage_path);
-  if(match){openVideo(match);return;}
   $('filmPlayerTitle').textContent=f[0];
   $('filmPlayerDescription').textContent=f[3]+' · '+f[1]+' · '+f[2];
   const player=$('filmPlayer');player.pause();player.removeAttribute('src');player.load();player.style.display='none';
-  $('filmPlayerMessage').textContent='Ehhez a filmhez még nincs feltöltött és jóváhagyott videófájl. Töltsd fel a videót pontosan ezzel a címmel: '+f[0]+'. Jóváhagyás után a filmre kattintva automatikusan elindul.';
   $('filmPlayerMessage').style.display='block';
   $('filmTrailerLink').href='https://www.youtube.com/results?search_query='+encodeURIComponent(f[0]+' hivatalos előzetes');
   showModal('filmModal');
@@ -211,7 +204,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    showModal('viewerModal');
    const playResult=player.play();
    if(playResult && typeof playResult.catch==='function'){
-     playResult.catch(()=>{$('viewerMeta').textContent=(v.category||'Videó')+' · Nyomd meg a lejátszás gombot, ha a böngésző blokkolta az automatikus indítást.';});
+     playResult.catch(()=>{$('viewerMeta').textContent=(v.category||'Videó')+' · Ha nem indul el automatikusan, nyomd meg a lejátszás gombot.';});
    }
    client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
  }
@@ -279,9 +272,9 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    try{
      const {error:storageError}=await client.storage.from('videos').upload(path,file,{contentType:file.type,upsert:false});
      if(storageError)throw storageError;
-     const {error:rowError}=await client.from('videos').insert({user_id:currentUser.id,title,description,category,storage_path:path,status:'pending'});
+     const {error:rowError}=await client.from('videos').insert({user_id:currentUser.id,title,description,category,storage_path:path,status:'published'});
      if(rowError){await client.storage.from('videos').remove([path]);throw rowError;}
-     status('uploadStatus','Sikeres feltöltés! A videó adminisztrátori ellenőrzésre vár.','ok');
+     status('uploadStatus','Sikeres feltöltés! A videó automatikusan megjelent a VideaMaxon.','ok');
      $('videoTitle').value='';$('videoDescription').value='';$('videoFile').value='';
    }catch(e){status('uploadStatus',e.message||'A feltöltés nem sikerült.','error');}
    finally{$('submitUpload').disabled=false;}
