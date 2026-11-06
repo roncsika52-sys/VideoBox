@@ -51,6 +51,52 @@ body[data-theme="purple"]{--red:#8054c7;--bg:#f4f0fa;--dark:#2b2040;--line:#e3d9
 body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{background:#242c38;color:#f0f3f8;border-color:#3b4656}
 @media(max-width:680px){.theme-select{max-width:105px;font-size:12px;padding:8px}}
 .open-film-poster{background-size:cover;background-position:center}.free-film-badge{display:inline-block;background:#e8f6ee;color:#176b43;border-radius:5px;padding:4px 7px;font-size:10px;font-weight:700;margin:4px 0 8px}.free-player-frame{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#111}.viewer .license-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+
+/* Streaming platform redesign */
+:root{--bg:#090d14;--dark:#f3f5f8;--white:#151c27;--line:#293342;--muted:#9aa8ba;--red:#e5a12c}
+body{background:#090d14;color:#f3f5f8;font-family:Inter,Arial,sans-serif}
+header{background:#0e141e;border-bottom:1px solid #263142}
+.top{max-width:1400px;padding:17px 24px}.logo{color:#e5a12c;font-size:30px}.logo span{color:#f6f7fa}
+.search input{background:#182231;border-color:#344255;color:#fff}.search button,.primary{background:#e5a12c;color:#10151d}
+.actions .btn{background:#182231;color:#eaf0f7;border-color:#344255}.actions .btn.red{background:#e5a12c;color:#111820;border-color:#e5a12c}
+.theme-select{background:#182231;color:#fff;border-color:#344255}
+nav{max-width:1400px;padding:0 24px 13px}nav button{background:#1b2635;color:#dce5ef}nav button.active{background:#e5a12c;color:#121820}
+.stream-nav{display:flex;gap:24px;max-width:1400px;margin:auto;padding:0 24px 15px;overflow:auto}
+.stream-nav a{color:#aeb9c8;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap}
+.stream-nav a:hover,.stream-nav a.active{color:#e5a12c}
+.hero{height:390px;max-width:1400px;margin:18px auto 0;position:relative;overflow:hidden;border-radius:18px;background:radial-gradient(ellipse at 75% 40%,#65451f 0,#252536 34%,#111b2a 70%,#0c111a 100%)}
+.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#090d14 0%,#090d14e8 38%,#090d1466 72%,#090d1430),linear-gradient(0deg,#090d14 0%,transparent 45%)}
+.hero-shade{position:absolute;inset:0;background:radial-gradient(circle at 76% 35%,#e5a12c44,transparent 30%)}
+.hero-content{position:absolute;left:6%;top:50%;transform:translateY(-50%);max-width:570px;z-index:1}
+.hero-kicker{color:#e5a12c;font-size:11px;font-weight:800;letter-spacing:2px}
+.hero h1{font-size:clamp(30px,4vw,52px);line-height:1.04;margin:15px 0 12px;letter-spacing:-1.5px}
+.hero p{font-size:15px;color:#c1cad6;line-height:1.6;max-width:460px}
+.hero-buttons{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+.hero-buttons a{padding:12px 17px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:800}
+.hero-primary{background:#e5a12c;color:#111820}.hero-secondary{background:#ffffff18;color:#fff;border:1px solid #ffffff35}
+.hero-bottom{position:absolute;bottom:17px;left:24px;right:24px;display:flex;justify-content:space-between;color:#aeb9c8;font-size:10px;letter-spacing:1.3px}
+main{max-width:1400px;margin:26px auto;padding:0 24px}
+.catalog-head{margin:38px 0 16px}.catalog-head h2{font-size:23px;letter-spacing:-.3px}
+.catalog-note{color:#9aa8ba}.catalog-filter{background:#182231;color:#eef3f8;border-color:#344255}
+.film-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
+.film-card,.card{background:#141c28;border:1px solid #202d3e;border-radius:12px;box-shadow:0 8px 25px #0003}
+.film-card:hover{transform:translateY(-5px);border-color:#9a702d;box-shadow:0 14px 28px #0006}
+.film-poster{height:225px;background:linear-gradient(145deg,#28364a,#111923);font-size:16px}
+.film-poster .poster-title{background:linear-gradient(transparent,#000d);font-weight:800}
+.film-info h3{color:#f2f5f8;font-size:14px}.film-info p,.meta{color:#9aa8ba}
+.film-actions a{background:#e5a12c;color:#121820}.film-actions a.secondary{background:#263447;color:#eaf0f8}
+.free-film-badge{background:#193c31;color:#83dfb2}
+.grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.poster{height:180px}
+.details h3{color:#f1f4f8}
+.empty,.film-empty{background:#141c28;color:#aeb9c8}
+footer{max-width:1400px;color:#8290a2;border-color:#263142}
+.dialog{background:#141c28;color:#f3f5f8;border:1px solid #344255}
+.field input,.field textarea,.field select{background:#0f1722;color:#fff;border-color:#344255}
+.status{color:#cbd5e1}
+@media(max-width:1050px){.film-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:680px){.top{padding:13px 14px}.stream-nav{padding:0 14px 13px;gap:18px}.hero{margin:10px 12px 0;height:340px;border-radius:13px}.hero-content{left:7%;right:7%}.hero h1{font-size:34px}.hero p{font-size:13px}.hero-bottom{left:15px;right:15px;font-size:9px}main{padding:0 13px}.film-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.film-poster{height:165px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-head{margin:27px 0 13px}.catalog-head h2{font-size:19px}}
+
 </style>
 </head>
 <body>
@@ -58,24 +104,35 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
  <div class="top">
   <div class="logo">Videa<span>Max</span></div>
   <form class="search" id="searchForm"><input id="searchInput" placeholder="Videó keresése..." aria-label="Videó keresése"><button>Keresés</button></form>
-  <div class="actions"><select id="themeSelect" class="theme-select" aria-label="Megjelenési téma"><option value="light">Világos</option><option value="dark">Sötét</option><option value="blue">Kék</option><option value="green">Zöld</option><option value="purple">Lila</option></select><button class="btn" id="adminButton" style="display:none">Admin</button><button class="btn" id="authButton">Belépés</button><button class="btn red" id="uploadButton">＋ Feltöltés</button></div>
+  <div class="actions"><select id="themeSelect" class="theme-select" aria-label="Megjelenési téma"><option value="light">Világos</option><option value="dark" selected>Sötét</option><option value="blue">Kék</option><option value="green">Zöld</option><option value="purple">Lila</option></select><button class="btn" id="adminButton" style="display:none">Admin</button><button class="btn" id="authButton">Belépés</button><button class="btn red" id="uploadButton">＋ Feltöltés</button></div>
  </div>
  <nav id="categories">
   <button class="active" data-cat="Összes">Összes</button><button data-cat="Film">Film</button><button data-cat="Zene">Zene</button><button data-cat="Sport">Sport</button><button data-cat="Szórakozás">Szórakozás</button><button data-cat="Oktatás">Oktatás</button><button data-cat="Egyéb">Egyéb</button>
  </nav>
+ <div class="stream-nav"><a href="#home" class="active">Főoldal</a><a href="#filmGrid">Filmek</a><a href="#freeFilmGrid">Ingyenes filmek</a><a href="#videoGrid">Feltöltések</a></div>
 </header>
+<section class="hero" id="home">
+ <div class="hero-shade"></div>
+ <div class="hero-content">
+  <span class="hero-kicker">V I D E A M A X  •  FILMÉLMÉNY</span>
+  <h1>Találd meg a következő kedvenc filmedet.</h1>
+  <p>Filmkatalógus, nyílt licencű alkotások és közösségi videók egy helyen.</p>
+  <div class="hero-buttons"><a href="#filmGrid" class="hero-primary">Filmek böngészése</a><a href="#freeFilmGrid" class="hero-secondary">Ingyenes filmek</a></div>
+ </div>
+ <div class="hero-bottom"><span>FOLYAMATOSAN BŐVÜLŐ KATALÓGUS</span><span>HU • VideaMax</span></div>
+</section>
 <main>
  <div class="intro"><div><h1 id="sectionTitle">Legújabb videók</h1><div class="hint" id="subtitle">Nézz videókat, vagy töltsd fel a sajátodat!</div></div></div>
  <div class="catalog-head">
-  <div><h2>Filmkatalógus</h2><div class="catalog-note">A 30 ismert film adatlapja és borítója látható; teljes lejátszáshoz jogszerű, magyar hangsávú forrás szükséges.</div></div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="filmGenreFilter" class="catalog-filter" aria-label="Filmkategória"><option value="all">Minden filmkategória</option></select><strong id="filmCount" class="meta">Betöltés…</strong></div>
+  <div><h2>Fedezd fel a filmeket</h2><div class="catalog-note">Válogass műfaj, cím és év szerint. A jogvédett filmek adatlapjai nem jelentenek automatikus lejátszási engedélyt.</div></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="filmSort" class="catalog-filter" aria-label="Rendezés"><option value="default">Ajánlott</option><option value="year-desc">Legújabb évjárat</option><option value="year-asc">Legrégebbi évjárat</option><option value="title">Cím szerint</option></select><select id="filmGenreFilter" class="catalog-filter" aria-label="Filmkategória"><option value="all">Minden filmkategória</option></select><strong id="filmCount" class="meta">Betöltés…</strong></div>
  </div>
  <section class="film-grid" id="filmGrid" aria-label="Filmkatalógus"></section>
- <div class="catalog-head"><div><h2>Ingyenesen nézhető, nyílt licencű filmek</h2><div class="catalog-note">Ezek a Blender Foundation nyílt licencű rövidfilmjei. A lejátszás az Internet Archive hivatalos beágyazott lejátszójában történik.</div></div></div>
+ <div class="catalog-head"><div><h2>Ingyenesen nézhető filmek</h2><div class="catalog-note">Nyílt licencű alkotások. Ahol elérhető, a lejátszó a VideaMaxon belül nyílik meg.</div></div></div>
  <section class="film-grid" id="freeFilmGrid" aria-label="Ingyenes, nyílt licencű filmek"></section>
  <div class="catalog-head"><div><h2>Régi klasszikusok – magyar feliratos gyűjtemény</h2><div class="catalog-note">A felsorolt némafilmeknél nem magyar szinkron, hanem képközi felirat vagy magyar felirat érhető el. A forrásoldalon ellenőrizd a konkrét változat jogait és lejátszását.</div></div></div>
  <section class="film-grid" id="publicDomainGrid" aria-label="Közkincs klasszikus filmek"></section>
- <div class="catalog-head"><div><h2>Feltöltött videók</h2><div class="catalog-note">A közösség által feltöltött és admin által jóváhagyott videók.</div></div></div>
+ <div class="catalog-head"><div><h2>Közösségi videók</h2><div class="catalog-note">A közösség által feltöltött és admin által jóváhagyott videók.</div></div></div>
  <section class="grid" id="videoGrid"><div class="empty">Videók betöltése…</div></section>
 </main>
 <footer>© 2026 VideaMax · Csak saját vagy megosztásra engedélyezett videót tölts fel. A feltöltések ellenőrzés után jelennek meg. A régi filmek jogállása országonként és változatonként eltérhet.</footer>
@@ -116,7 +173,7 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
  let currentUser = null, isAdmin = false, authMode = 'login', activeCategory = 'Összes', videos = [];
  const themeSelect=$('themeSelect');
  function applyTheme(name){const allowed=['light','dark','blue','green','purple'];const theme=allowed.includes(name)?name:'light';document.body.dataset.theme=theme;themeSelect.value=theme;try{localStorage.setItem('videomax-theme',theme)}catch(e){}}
- try{applyTheme(localStorage.getItem('videomax-theme')||'light')}catch(e){applyTheme('light')}
+ try{applyTheme(localStorage.getItem('videomax-theme')||'dark')}catch(e){applyTheme('dark')}
  themeSelect.addEventListener('change',()=>applyTheme(themeSelect.value));
  const filmCatalog = [
   ['Predator – A ragadozó','Akció / sci-fi','1987','Egy mentőcsapat különös veszéllyel találkozik a dzsungelben.'],
@@ -153,6 +210,7 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
  const genreSelect=$('filmGenreFilter');
  [...new Set(filmCatalog.flatMap(f=>f[1].split('/').map(g=>g.trim())))].sort((a,b)=>a.localeCompare(b,'hu')).forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;genreSelect.append(o)});
  genreSelect.addEventListener('change',renderFilmCatalog);
+ $('filmSort').addEventListener('change',renderFilmCatalog);
  // Filmplakátok lekérése a Wikipédia nyilvános oldal-előnézeteiből.
  // A borítóképek a böngészőben töltődnek be, nem a Supabase-tárhelyet használják.
  const filmPosterPages={
@@ -206,6 +264,8 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
   const query=$('searchInput').value.trim().toLocaleLowerCase('hu');
   const genre=$('filmGenreFilter')?.value||'all';
   const chosen=filmCatalog.filter(f=>(genre==='all'||f[1].split('/').some(g=>g.trim()===genre)) && f.join(' ').toLocaleLowerCase('hu').includes(query));
+  const sort=$('filmSort')?.value||'default';
+  if(sort==='year-desc')chosen.sort((a,b)=>Number(b[2])-Number(a[2]));else if(sort==='year-asc')chosen.sort((a,b)=>Number(a[2])-Number(b[2]));else if(sort==='title')chosen.sort((a,b)=>a[0].localeCompare(b[0],'hu'));
   $('filmCount').textContent=chosen.length+' film';
   if(!chosen.length){box.append(safeText('div','Nincs találat a katalógusban.','film-empty'));return;}
   chosen.forEach(f=>{
