@@ -128,7 +128,7 @@ footer{max-width:1400px;color:#8290a2;border-color:#263142}
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="filmSort" class="catalog-filter" aria-label="Rendezés"><option value="default">Ajánlott</option><option value="year-desc">Legújabb évjárat</option><option value="year-asc">Legrégebbi évjárat</option><option value="title">Cím szerint</option></select><select id="filmGenreFilter" class="catalog-filter" aria-label="Filmkategória"><option value="all">Minden filmkategória</option></select><strong id="filmCount" class="meta">Betöltés…</strong></div>
  </div>
  <section class="film-grid" id="filmGrid" aria-label="Filmkatalógus"></section>
- <div class="catalog-head"><div><h2>Ingyenesen nézhető filmek</h2><div class="catalog-note">Nyílt licencű alkotások. Ahol elérhető, a lejátszó a VideaMaxon belül nyílik meg.</div></div></div>
+ <div class="catalog-head"><div><h2>Ingyenesen nézhető filmek</h2><div class="catalog-note">Nyílt licencű alkotások. Ahol ellenőrzött videófájl vagy beágyazási forrás rendelkezésre áll, a film a VideaMaxon belül indul.</div></div></div>
  <section class="film-grid" id="freeFilmGrid" aria-label="Ingyenes, nyílt licencű filmek"></section>
  <div class="catalog-head"><div><h2>Régi klasszikusok – magyar feliratos gyűjtemény</h2><div class="catalog-note">A felsorolt némafilmeknél nem magyar szinkron, hanem képközi felirat vagy magyar felirat érhető el. A forrásoldalon ellenőrizd a konkrét változat jogait és lejátszását.</div></div></div>
  <section class="film-grid" id="publicDomainGrid" aria-label="Közkincs klasszikus filmek"></section>
@@ -312,7 +312,7 @@ footer{max-width:1400px;color:#8290a2;border-color:#263142}
   {title:'Sintel',year:'2010',studio:'Blender Foundation',genre:'Fantasy / kaland',license:'CC BY 3.0',credit:'Blender Foundation',source:'https://studio.blender.org/films/sintel/',id:'Sintel'},
   {title:'Tears of Steel',year:'2012',studio:'Blender Foundation',genre:'Sci-fi / akció',license:'CC BY 3.0',credit:'Blender Foundation',source:'https://studio.blender.org/films/tears-of-steel/',id:'TearsOfSteel'},
   {title:'Cosmos Laundromat – First Cycle',year:'2015',studio:'Blender Institute',genre:'Fantasy / sci-fi',license:'CC BY 4.0',credit:'Blender Institute',source:'https://studio.blender.org/films/cosmos-laundromat/',id:''},
-  {title:'Glass Half',year:'2015',studio:'Blender Institute',genre:'Animáció / vígjáték',license:'CC BY 3.0',credit:'Blender Institute',source:'https://studio.blender.org/films/glass-half/',id:''},
+  {title:'Glass Half',year:'2015',studio:'Blender Institute',genre:'Animáció / vígjáték',license:'CC BY 4.0',credit:'Blender Foundation (Wikimedia Commons másolat)',source:'https://commons.wikimedia.org/wiki/File:Glass_Half_-_Blender_Open_Movie-full_movie.webm',id:'',directUrl:'https://upload.wikimedia.org/wikipedia/commons/0/02/Glass_Half_-_Blender_Open_Movie-full_movie.webm'},
   {title:'Caminandes: Llamigos',year:'2016',studio:'Blender Institute',genre:'Animáció / vígjáték',license:'CC BY 3.0',credit:'Blender Institute',source:'https://studio.blender.org/films/caminandes-llamigos/',id:''},
   {title:'Agent 327: Operation Barbershop',year:'2017',studio:'Blender Institute',genre:'Animáció / kaland',license:'CC BY 4.0',credit:'Blender Institute',source:'https://studio.blender.org/films/agent-327/',id:''},
   {title:'The Daily Dweebs',year:'2017',studio:'Blender Institute',genre:'Animáció / vígjáték',license:'CC BY 4.0',credit:'Blender Institute',source:'https://studio.blender.org/films/the-daily-dweebs/',id:''},
@@ -343,9 +343,13 @@ footer{max-width:1400px;color:#8290a2;border-color:#263142}
   $('freeFilmTitle').textContent=f.title;
   const frame=$('freeFilmFrame'),video=$('freeFilmVideo'),msg=$('freeFilmUnavailable');
   video.pause();video.removeAttribute('src');video.load();video.style.display='none';frame.style.display='none';frame.src='about:blank';
-  if(f.id){
+  if(f.directUrl){
+   video.style.display='block';video.src=f.directUrl;video.load();
+   $('freeFilmLicense').textContent='Lejátszás a VideaMax saját videólejátszójában. Készítő: '+f.credit+'. Licenc: '+f.license+'. Forrás: Wikimedia Commons.';
+   msg.style.display='none';
+  } else if(f.id){
    frame.style.display='block';frame.src='https://archive.org/embed/'+encodeURIComponent(f.id);
-   $('freeFilmLicense').textContent='A lejátszó a VideaMax ablakán belül jelenik meg. Készítő: '+f.credit+'. Licenc: '+f.license+'.';
+   $('freeFilmLicense').textContent='A beágyazott lejátszó a VideaMax ablakán belül jelenik meg. Készítő: '+f.credit+'. Licenc: '+f.license+'.';
    msg.style.display='none';
   } else {
    msg.style.display='block';
