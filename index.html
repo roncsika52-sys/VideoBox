@@ -50,7 +50,7 @@ body[data-theme="purple"]{--red:#8054c7;--bg:#f4f0fa;--dark:#2b2040;--line:#e3d9
 .catalog-filter{border:1px solid #d7dbe1;border-radius:8px;padding:9px;background:#fff;color:#222;max-width:190px}
 body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{background:#242c38;color:#f0f3f8;border-color:#3b4656}
 @media(max-width:680px){.theme-select{max-width:105px;font-size:12px;padding:8px}}
-.free-film-badge{display:inline-block;background:#e8f6ee;color:#176b43;border-radius:5px;padding:4px 7px;font-size:10px;font-weight:700;margin:4px 0 8px}.free-player-frame{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#111}.viewer .license-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+.open-film-poster{background-size:cover;background-position:center}.free-film-badge{display:inline-block;background:#e8f6ee;color:#176b43;border-radius:5px;padding:4px 7px;font-size:10px;font-weight:700;margin:4px 0 8px}.free-player-frame{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;background:#111}.viewer .license-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
 </style>
 </head>
 <body>
@@ -245,21 +245,39 @@ body[data-theme="dark"] .theme-select,body[data-theme="dark"] .catalog-filter{ba
  }
 
  const freeFilms = [
-  {title:'Big Buck Bunny',year:'2008',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'BigBuckBunny_124',credit:'Blender Foundation · CC BY 3.0'},
-  {title:'Sintel',year:'2010',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'Sintel',credit:'Blender Foundation · CC BY 3.0'},
-  {title:'Tears of Steel',year:'2012',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'TearsOfSteel',credit:'Blender Foundation · CC BY 3.0'},
-  {title:'Elephants Dream',year:'2006',studio:'Blender Foundation',license:'Creative Commons Attribution 3.0 (CC BY 3.0)',id:'ElephantsDream',credit:'Blender Foundation · CC BY 3.0'}
+  {title:'Elephants Dream',year:'2006',studio:'Blender Foundation',genre:'Fantasy / animáció',license:'CC BY 2.5',credit:'Blender Foundation és Netherlands Media Art Institute',source:'https://studio.blender.org/films/elephants-dream/',id:'ElephantsDream'},
+  {title:'Big Buck Bunny',year:'2008',studio:'Blender Foundation',genre:'Animáció / vígjáték',license:'CC BY 3.0',credit:'Blender Foundation',source:'https://studio.blender.org/films/big-buck-bunny/',id:'BigBuckBunny_124'},
+  {title:'Sintel',year:'2010',studio:'Blender Foundation',genre:'Fantasy / kaland',license:'CC BY 3.0',credit:'Blender Foundation',source:'https://studio.blender.org/films/sintel/',id:'Sintel'},
+  {title:'Tears of Steel',year:'2012',studio:'Blender Foundation',genre:'Sci-fi / akció',license:'CC BY 3.0',credit:'Blender Foundation',source:'https://studio.blender.org/films/tears-of-steel/',id:'TearsOfSteel'},
+  {title:'Cosmos Laundromat – First Cycle',year:'2015',studio:'Blender Institute',genre:'Fantasy / sci-fi',license:'CC BY 4.0',credit:'Blender Institute',source:'https://studio.blender.org/films/cosmos-laundromat/',id:''},
+  {title:'Glass Half',year:'2015',studio:'Blender Institute',genre:'Animáció / vígjáték',license:'CC BY 3.0',credit:'Blender Institute',source:'https://studio.blender.org/films/glass-half/',id:''},
+  {title:'Caminandes: Llamigos',year:'2016',studio:'Blender Institute',genre:'Animáció / vígjáték',license:'CC BY 3.0',credit:'Blender Institute',source:'https://studio.blender.org/films/caminandes-llamigos/',id:''},
+  {title:'Agent 327: Operation Barbershop',year:'2017',studio:'Blender Institute',genre:'Animáció / kaland',license:'CC BY 4.0',credit:'Blender Institute',source:'https://studio.blender.org/films/agent-327/',id:''},
+  {title:'The Daily Dweebs',year:'2017',studio:'Blender Institute',genre:'Animáció / vígjáték',license:'CC BY 4.0',credit:'Blender Institute',source:'https://studio.blender.org/films/the-daily-dweebs/',id:''},
+  {title:'Hero',year:'2018',studio:'Blender Institute',genre:'Animáció / dráma',license:'CC BY 4.0',credit:'Blender Institute',source:'https://studio.blender.org/films/hero/',id:''},
+  {title:'Spring',year:'2019',studio:'Blender Studio',genre:'Fantasy / animáció',license:'CC BY 4.0',credit:'Blender Studio',source:'https://studio.blender.org/films/spring/',id:''},
+  {title:'Coffee Run',year:'2020',studio:'Blender Studio',genre:'Animáció / dráma',license:'CC BY 4.0',credit:'Blender Studio',source:'https://studio.blender.org/films/coffee-run/',id:''},
+  {title:'Sprite Fright',year:'2021',studio:'Blender Studio',genre:'Vígjáték / fantasy',license:'CC BY 4.0',credit:'Blender Studio',source:'https://studio.blender.org/films/sprite-fright/',id:''},
+  {title:'Charge',year:'2022',studio:'Blender Studio',genre:'Sci-fi / akció',license:'CC BY 4.0',credit:'Blender Studio',source:'https://studio.blender.org/films/charge/',id:''},
+  {title:'Wing It!',year:'2023',studio:'Blender Studio',genre:'Animáció / vígjáték',license:'CC BY 4.0',credit:'Blender Studio',source:'https://studio.blender.org/films/wing-it/',id:''}
  ];
  function renderFreeFilms(){
   const box=$('freeFilmGrid');if(!box)return;box.replaceChildren();
-  freeFilms.forEach(f=>{
+  freeFilms.forEach((f,index)=>{
    const card=document.createElement('article');card.className='film-card';
-   const poster=document.createElement('div');poster.className='film-poster';poster.append(safeText('span','▶','poster-title'));
+   const poster=document.createElement('div');poster.className='film-poster open-film-poster';
+   poster.style.backgroundImage=`linear-gradient(0deg,#10151fe8,#10151f30),linear-gradient(135deg,hsl(${(index*31+205)%360} 55% 35%),hsl(${(index*31+255)%360} 50% 18%))`;
+   poster.append(safeText('span',f.title,'poster-title'));
    const info=document.createElement('div');info.className='film-info';
-   info.append(safeText('h3',f.title),safeText('div',f.studio+' · '+f.year,'meta'),safeText('span',f.license,'free-film-badge'),safeText('p','Nyílt licencű animációs rövidfilm. Lejátszás az oldalon.'));
+   info.append(safeText('h3',f.title),safeText('div',f.genre+' · '+f.year,'meta'),safeText('span',f.license+' · szabad licenc','free-film-badge'),safeText('p','Nyílt licencű Blender-film. A hivatalos oldalon nézhető meg és onnan tölthető le, ha a letöltés elérhető.'));
    const actions=document.createElement('div');actions.className='film-actions';
-   const play=document.createElement('a');play.href='#';play.textContent='Lejátszás';play.addEventListener('click',e=>{e.preventDefault();openFreeFilm(f);});
-   actions.append(play);info.append(actions);card.append(poster,info);card.addEventListener('click',e=>{if(!e.target.closest('a'))openFreeFilm(f);});box.append(card);
+   if(f.id){
+    const play=document.createElement('a');play.href='#';play.textContent='Lejátszás itt';play.addEventListener('click',e=>{e.preventDefault();openFreeFilm(f);});actions.append(play);
+   }
+   const source=document.createElement('a');source.href=f.source;source.target='_blank';source.rel='noopener noreferrer';source.textContent='Megnézés / letöltés';source.className=f.id?'secondary':'';
+   actions.append(source);info.append(actions);card.append(poster,info);
+   card.addEventListener('click',e=>{if(!e.target.closest('a')){if(f.id)openFreeFilm(f);else window.open(f.source,'_blank','noopener');}});
+   box.append(card);
   });
  }
  function openFreeFilm(f){
