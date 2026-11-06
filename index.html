@@ -52,7 +52,7 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
 <main>
  <div class="intro"><div><h1 id="sectionTitle">Legújabb videók</h1><div class="hint" id="subtitle">Nézz videókat, vagy töltsd fel a sajátodat!</div></div></div>
  <div class="catalog-head">
-  <div><h2>Filmkatalógus</h2><div class="catalog-note">Plakátképes filmkatalógus. A lejátszó az oldalon nyílik meg; teljes film csak saját vagy engedéllyel feltöltött videóból játszható le.</div></div>
+  <div><h2>Filmkatalógus</h2><div class="catalog-note">Kattints egy filmre a lejátszáshoz. A katalógusfilm akkor indul el, ha azonos címmel feltöltött és jóváhagyott videó tartozik hozzá.</div></div>
   <strong id="filmCount" class="meta">Betöltés…</strong>
  </div>
  <section class="film-grid" id="filmGrid" aria-label="Filmkatalógus"></section>
@@ -145,10 +145,17 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
    card.addEventListener('click',e=>{if(!e.target.closest('a'))openFilm(f);});box.append(card);
   });
  }
+ function normalizeTitle(value){
+  return String(value||'').toLocaleLowerCase('hu').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+ }
  function openFilm(f){
+  const wanted=normalizeTitle(f[0]);
+  const match=videos.find(v=>normalizeTitle(v.title)===wanted && v.storage_path);
+  if(match){openVideo(match);return;}
   $('filmPlayerTitle').textContent=f[0];
   $('filmPlayerDescription').textContent=f[3]+' · '+f[1]+' · '+f[2];
   const player=$('filmPlayer');player.pause();player.removeAttribute('src');player.load();player.style.display='none';
+  $('filmPlayerMessage').textContent='Ehhez a filmhez még nincs feltöltött és jóváhagyott videófájl. Töltsd fel a videót pontosan ezzel a címmel: '+f[0]+'. Jóváhagyás után a filmre kattintva automatikusan elindul.';
   $('filmPlayerMessage').style.display='block';
   $('filmTrailerLink').href='https://www.youtube.com/results?search_query='+encodeURIComponent(f[0]+' hivatalos előzetes');
   showModal('filmModal');
@@ -197,9 +204,15 @@ footer{max-width:1240px;margin:45px auto 0;padding:20px 18px;border-top:1px soli
  }
  async function openVideo(v) {
    const {data} = client.storage.from('videos').getPublicUrl(v.storage_path);
-   $('viewerVideo').src=data.publicUrl; $('viewerTitle').textContent=v.title;
+   const player=$('viewerVideo');
+   player.pause();player.src=data.publicUrl;player.load();
+   $('viewerTitle').textContent=v.title;
    $('viewerMeta').textContent=v.category||'Videó'; $('viewerDescription').textContent=v.description||'';
    showModal('viewerModal');
+   const playResult=player.play();
+   if(playResult && typeof playResult.catch==='function'){
+     playResult.catch(()=>{$('viewerMeta').textContent=(v.category||'Videó')+' · Nyomd meg a lejátszás gombot, ha a böngésző blokkolta az automatikus indítást.';});
+   }
    client.from('videos').update({views:(v.views||0)+1}).eq('id',v.id).then(()=>{});
  }
  
